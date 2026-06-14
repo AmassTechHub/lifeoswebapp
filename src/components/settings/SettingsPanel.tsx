@@ -436,7 +436,7 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
             <CardTitle>AI Coach</CardTitle>
           </div>
           <CardDescription>
-            Connect your OpenAI API key to unlock the full AI Coach, daily briefs, and smart coaching.
+            Connect your Claude API key to unlock the full AI Coach, daily briefs, and smart coaching. Get one free at console.anthropic.com.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -448,14 +448,14 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
           )}
           <form onSubmit={handleSaveApiKey} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="api-key">OpenAI API key</Label>
+              <Label htmlFor="api-key">Claude (Anthropic) API key</Label>
               <div className="relative">
                 <Input
                   id="api-key"
                   type={showKey ? "text" : "password"}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={hasServerKey ? "sk-••••• (key saved)" : "sk-..."}
+                  placeholder={hasServerKey ? "sk-ant-••••• (key saved)" : "sk-ant-..."}
                   className="pr-10"
                 />
                 <button

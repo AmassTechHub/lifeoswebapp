@@ -65,11 +65,11 @@ export async function POST(request: Request) {
       select: { openAiKey: true, name: true, primaryGoal: true, useCase: true, workSchedule: true },
     }),
   ]);
-  const apiKey = (userRecord?.openAiKey?.trim() || process.env.OPENAI_API_KEY?.trim()) ?? "";
+  const apiKey = (userRecord?.openAiKey?.trim() || process.env.ANTHROPIC_API_KEY?.trim()) ?? "";
   if (!apiKey) {
     return NextResponse.json({
       reply:
-        "AI Coach is ready, but OPENAI_API_KEY is not set yet. Add it to your .env file, restart the server, and ask again. Until then: open Focus for deep work, Learning for notes and flashcards, and Content Hub to move videos through your pipeline.",
+        "AI Coach is ready, but no Claude API key is set yet. Go to Settings → AI Coach and paste your Anthropic API key (get one free at console.anthropic.com).",
       configured: false,
     });
   }
@@ -81,11 +81,7 @@ export async function POST(request: Request) {
     workSchedule: userRecord?.workSchedule ?? null,
   });
 
-  const messages = [
-    {
-      role: "system",
-      content: `${systemPrompt}\n\nLive context:\n${JSON.stringify(context)}`,
-    },
+  const chatMessages = [
     ...history
       .slice(-12)
       .map((m: { role?: string; content?: string }) => ({
@@ -96,32 +92,33 @@ export async function POST(request: Request) {
   ];
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-        messages,
-        max_tokens: 800,
-        temperature: 0.7,
+        model: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system: `${systemPrompt}\n\nLive context:\n${JSON.stringify(context)}`,
+        messages: chatMessages,
       }),
     });
 
     if (!res.ok) {
       const err = await res.text();
-      console.error("OpenAI error:", err);
+      console.error("Anthropic error:", err);
       return NextResponse.json(
-        { error: "AI request failed. Check your API key and billing." },
+        { error: "AI request failed. Check your Claude API key in Settings." },
         { status: 502 }
       );
     }
 
     const data = await res.json();
     const reply =
-      data.choices?.[0]?.message?.content?.trim() ??
+      (data.content as { type: string; text: string }[])?.[0]?.text?.trim() ??
       "I could not generate a response. Try again.";
 
     return NextResponse.json({ reply, configured: true });
