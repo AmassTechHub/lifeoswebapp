@@ -1,10 +1,20 @@
-import { ModulePlaceholder } from "@/components/layout/ModulePlaceholder";
+import { CalendarPanel } from "@/components/calendar/CalendarPanel";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { getWeekEvents } from "@/lib/actions/calendar";
+import { requireSession } from "@/lib/session";
 
-export default function CalendarPage() {
+export default async function CalendarPage() {
+  const session = await requireSession();
+  const events = await getWeekEvents(session.user.id);
+
   return (
-    <ModulePlaceholder
-      title="Calendar"
-      description="Google Calendar style view for classes, meetings, church, clients, and personal events."
-    />
+    <DashboardShell>
+      <PageHeader
+        title="Calendar"
+        description="Every class, client call, and personal block in one timeline."
+      />
+      <CalendarPanel events={events} />
+    </DashboardShell>
   );
 }

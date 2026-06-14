@@ -1,9 +1,14 @@
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
 
 export default async function SettingsPage() {
   const session = await requireSession();
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { openAiKey: true },
+  });
 
   return (
     <div className="p-8">
@@ -19,6 +24,7 @@ export default async function SettingsPage() {
             email: session.user.email,
             createdAt: new Date(session.user.createdAt),
           }}
+          hasServerKey={!!userRecord?.openAiKey}
         />
       </div>
     </div>

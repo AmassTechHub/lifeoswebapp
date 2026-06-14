@@ -120,7 +120,7 @@ export default function RegisterPage() {
           )}
         </Button>
 
-        <p className="auth-field-enter text-center text-xs leading-relaxed text-slate-500 [animation-delay:280ms]">
+        <p className="auth-field-enter text-center text-xs leading-relaxed text-muted-foreground [animation-delay:280ms]">
           By creating an account, you agree to use Life OS to plan, track, and
           execute your personal goals.
         </p>

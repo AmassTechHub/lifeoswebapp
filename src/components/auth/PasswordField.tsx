@@ -45,7 +45,7 @@ export function PasswordField({
       style={{ animationDelay: `${delay}ms` }}
     >
       {label ? (
-        <Label htmlFor={id} className="text-slate-700">
+        <Label htmlFor={id} className="text-foreground">
           {label}
         </Label>
       ) : null}
@@ -59,12 +59,12 @@ export function PasswordField({
           minLength={minLength}
           required={required}
           autoComplete={showStrength ? "new-password" : "current-password"}
-          className="flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 pr-11 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15"
+          className="flex h-11 w-full rounded-xl border border-border bg-muted/50 px-4 pr-11 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-accent focus:bg-background focus:ring-2 focus:ring-accent/15"
         />
         <button
           type="button"
           onClick={() => setShow((v) => !v)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition-colors hover:text-slate-700"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
           aria-label={show ? "Hide password" : "Show password"}
         >
           {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -86,12 +86,12 @@ export function PasswordField({
                       : strength === "good"
                         ? "bg-accent"
                         : "bg-emerald-500"
-                    : "bg-slate-200"
+                    : "bg-border"
                 )}
               />
             ))}
           </div>
-          <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             {strength}
           </span>
         </div>

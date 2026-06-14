@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Better Auth tables — extend as auth is wired up
@@ -20,6 +21,8 @@ model User {
   sessions Session[]
   accounts Account[]
 
+  openAiKey  String?
+
   goals      Goal[]
   tasks      Task[]
   habits     Habit[]
@@ -28,6 +31,13 @@ model User {
   clients    Client[]
   learnings  LearningTopic[]
   content    ContentItem[]
+  studyCourses StudyCourse[]
+  flashcards   Flashcard[]
+  calendarEvents CalendarEvent[]
+  timetableFiles TimetableFile[]
+  daySnapshots   DaySnapshot[]
+  workspaceDocs  WorkspaceDoc[]
+  lifeCycleLogs  LifeCycleLog[]
 }
 
 model Session {
@@ -110,17 +120,19 @@ enum TaskCategory {
 }
 
 model Task {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  status      TaskStatus   @default(BACKLOG)
-  category    TaskCategory @default(PERSONAL)
-  dueDate     DateTime?
-  completed   Boolean      @default(false)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  status        TaskStatus   @default(BACKLOG)
+  category      TaskCategory @default(PERSONAL)
+  studyCourseId String?
+  studyCourse   StudyCourse? @relation(fields: [studyCourseId], references: [id], onDelete: SetNull)
+  dueDate       DateTime?
+  completed     Boolean      @default(false)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Habit {
@@ -188,18 +200,98 @@ model Client {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  deliverables ClientDeliverable[]
+}
+
+enum DeliverableStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+}
+
+model ClientDeliverable {
+  id        String            @id @default(cuid())
+  clientId  String
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title     String
+  dueDate   DateTime?
+  status    DeliverableStatus @default(PENDING)
+  amount    Float?
+  notes     String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+enum EventCategory {
+  PERSONAL
+  ACADEMICS
+  CODING
+  CONTENT
+  CLIENTS
+  CHURCH
+  OTHER
+}
+
+enum EventSource {
+  MANUAL
+  TIMETABLE
+  SYSTEM
+}
+
+model CalendarEvent {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  description   String?
+  startAt       DateTime
+  endAt         DateTime
+  category      EventCategory @default(PERSONAL)
+  source        EventSource   @default(MANUAL)
+  studyCourseId String?
+  studyCourse   StudyCourse?  @relation(fields: [studyCourseId], references: [id], onDelete: SetNull)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([userId, startAt])
+}
+
+model TimetableFile {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName  String
+  fileUrl   String
+  mimeType  String?
+  createdAt DateTime @default(now())
+}
+
+model DaySnapshot {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  score     Int
+  breakdown String
+  focusJson String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
 }
 
 model Expense {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  amount      Float
-  category    String
-  description String?
-  date        DateTime @default(now())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount        Float
+  category      String
+  description   String?
+  paymentMethod String   @default("CASH")
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Income {
@@ -212,4 +304,106 @@ model Income {
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// Study hub: classes like DSA — notes, summaries, slide uploads
+model StudyCourse {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  code      String?
+  color     String   @default("#3b82f6")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  notes           StudyNote[]
+  materials       StudyMaterial[]
+  flashcards      Flashcard[]
+  tasks           Task[]
+  calendarEvents  CalendarEvent[]
+  scheduleSlots   CourseSchedule[]
+}
+
+model CourseSchedule {
+  id         String      @id @default(cuid())
+  courseId   String
+  course     StudyCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
+  venue      String?
+  createdAt  DateTime    @default(now())
+}
+
+model Flashcard {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    StudyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  front     String
+  back      String
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+enum StudyNoteType {
+  NOTE
+  SUMMARY
+  LECTURE
+}
+
+model StudyNote {
+  id        String        @id @default(cuid())
+  courseId  String
+  course    StudyCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  content   String        @default("")
+  type      StudyNoteType @default(NOTE)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model StudyMaterial {
+  id        String      @id @default(cuid())
+  courseId  String
+  course    StudyCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title     String
+  fileName  String
+  fileUrl   String
+  mimeType  String?
+  fileSize  Int?
+  createdAt DateTime    @default(now())
+}
+
+model WorkspaceDoc {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String   @default("")
+  folder    String   @default("General")
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum LifeCycleType {
+  MORNING
+  EVENING
+  WEEKLY
+}
+
+model LifeCycleLog {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      LifeCycleType
+  date      DateTime
+  summary   String
+  payload   String        @default("{}")
+  createdAt DateTime      @default(now())
+
+  @@unique([userId, type, date])
 }

@@ -2,9 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
+  Bot,
   Calendar,
   Check,
+  Eye,
+  EyeOff,
   Loader2,
   LogOut,
   Moon,
@@ -31,6 +35,7 @@ interface SettingsPanelProps {
     email: string;
     createdAt: Date;
   };
+  hasServerKey?: boolean;
 }
 
 const PREFERENCES_KEY = "life-os-preferences";
@@ -99,7 +104,7 @@ function PreferenceToggle({
   );
 }
 
-export function SettingsPanel({ user }: SettingsPanelProps) {
+export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -108,9 +113,14 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
   const [loggingOut, setLoggingOut] = useState(false);
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
   const [prefsSaved, setPrefsSaved] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [keySaving, setKeySaving] = useState(false);
 
   useEffect(() => {
     setPreferences(loadPreferences());
+    const stored = localStorage.getItem("life-os-openai-key");
+    if (stored) setApiKey(stored);
   }, []);
 
   async function handleProfileSave(e: React.FormEvent) {
@@ -152,6 +162,25 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
     await authClient.signOut();
     router.push("/");
     router.refresh();
+  }
+
+  async function handleSaveApiKey(e: React.FormEvent) {
+    e.preventDefault();
+    setKeySaving(true);
+    const trimmed = apiKey.trim();
+    if (!trimmed) {
+      localStorage.removeItem("life-os-openai-key");
+      toast.success("API key cleared");
+    } else {
+      localStorage.setItem("life-os-openai-key", trimmed);
+      await fetch("/api/settings/api-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: trimmed }),
+      }).catch(() => null);
+      toast.success("API key saved. AI Coach is now fully powered.");
+    }
+    setKeySaving(false);
   }
 
   const memberSince = new Date(user.createdAt).toLocaleDateString("en-US", {
@@ -256,6 +285,76 @@ export function SettingsPanel({ user }: SettingsPanelProps) {
             checked={preferences.compactSidebar}
             onChange={(v) => handlePreferenceChange("compactSidebar", v)}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Bot className="h-4 w-4 text-accent" />
+            <CardTitle>AI Coach</CardTitle>
+          </div>
+          <CardDescription>
+            Connect your OpenAI API key to unlock the full AI Coach, daily briefs, and smart coaching.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {hasServerKey && !apiKey && (
+            <div className="mb-4 flex items-center gap-2 rounded-lg border border-success/20 bg-success/5 px-4 py-3 text-sm text-success">
+              <Check className="h-4 w-4 shrink-0" />
+              API key is saved. Enter a new key below to replace it.
+            </div>
+          )}
+          <form onSubmit={handleSaveApiKey} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="api-key">OpenAI API key</Label>
+              <div className="relative">
+                <Input
+                  id="api-key"
+                  type={showKey ? "text" : "password"}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder={hasServerKey ? "sk-••••• (key saved)" : "sk-..."}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your key is stored securely in your account and used only to power your AI Coach.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button type="submit" disabled={keySaving}>
+                {keySaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save key"}
+              </Button>
+              {hasServerKey && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-danger hover:text-danger"
+                  onClick={async () => {
+                    setApiKey("");
+                    localStorage.removeItem("life-os-openai-key");
+                    await fetch("/api/settings/api-key", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ key: "" }),
+                    }).catch(() => null);
+                    toast.success("API key removed");
+                  }}
+                >
+                  Remove key
+                </Button>
+              )}
+            </div>
+          </form>
         </CardContent>
       </Card>
 

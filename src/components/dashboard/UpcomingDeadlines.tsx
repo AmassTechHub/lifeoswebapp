@@ -1,53 +1,48 @@
+import Link from "next/link";
+
 import { dashboardCardClass } from "@/components/dashboard/dashboard-styles";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const deadlines = [
-  {
-    title: "Data Structures Assignment",
-    category: "Academics",
-    due: "Today, 11:59 PM",
-    variant: "danger" as const,
-  },
-  {
-    title: "LPG Travels Website Review",
-    category: "Clients",
-    due: "Tomorrow",
-    variant: "warning" as const,
-  },
-  {
-    title: "Greene Consult Proposal",
-    category: "Clients",
-    due: "Jun 2",
-    variant: "default" as const,
-  },
-  {
-    title: "Team sync with Startup Genesis",
-    category: "Business",
-    due: "Jun 3",
-    variant: "default" as const,
-  },
-];
+type Deadline = {
+  id: string;
+  title: string;
+  category: string;
+  due: string;
+  variant: "danger" | "warning" | "default";
+  href: string;
+};
 
-export function UpcomingDeadlines() {
+export function UpcomingDeadlines({ deadlines }: { deadlines: Deadline[] }) {
   return (
     <Card className={dashboardCardClass()}>
       <CardHeader>
         <CardTitle>Upcoming Deadlines</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {deadlines.map((item) => (
-          <div
-            key={item.title}
-            className="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-4 py-3"
-          >
-            <div>
-              <p className="text-sm font-medium">{item.title}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{item.due}</p>
-            </div>
-            <Badge variant={item.variant}>{item.category}</Badge>
-          </div>
-        ))}
+        {deadlines.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No deadlines. Add tasks with due dates or{" "}
+            <Link href="/clients" className="text-accent hover:underline">
+              client deliverables
+            </Link>
+            .
+          </p>
+        ) : (
+          deadlines.map((item) => (
+            <Link
+              key={item.id}
+              href={item.href}
+              className="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-4 py-3 transition-colors hover:border-accent/25 hover:bg-accent/5"
+            >
+              <div>
+                <p className="text-sm font-medium">{item.title}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{item.due}</p>
+              </div>
+              <Badge variant={item.variant}>{item.category}</Badge>
+            </Link>
+          ))
+        )}
       </CardContent>
     </Card>
   );

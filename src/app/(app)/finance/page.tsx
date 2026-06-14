@@ -1,10 +1,20 @@
-import { ModulePlaceholder } from "@/components/layout/ModulePlaceholder";
+import { FinancePanel } from "@/components/finance/FinancePanel";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { getFinanceSummary } from "@/lib/actions/finance";
+import { requireSession } from "@/lib/session";
 
-export default function FinancePage() {
+export default async function FinancePage() {
+  const session = await requireSession();
+  const data = await getFinanceSummary(session.user.id);
+
   return (
-    <ModulePlaceholder
-      title="Finance"
-      description="Track income, expenses, savings, and revenue with monthly, quarterly, and annual charts."
-    />
+    <DashboardShell>
+      <PageHeader
+        title="Finance"
+        description="Track income, expenses, and see where your money goes each month."
+      />
+      <FinancePanel data={data} />
+    </DashboardShell>
   );
 }

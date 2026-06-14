@@ -1,50 +1,67 @@
+import Link from "next/link";
+
 import { dashboardCardClass } from "@/components/dashboard/dashboard-styles";
+import { formatTime } from "@/lib/date-utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
-const schedule = [
-  { time: "06:00", label: "Devotion and planning", type: "Personal" },
-  { time: "08:00", label: "Software Engineering lecture", type: "Academics" },
-  { time: "12:00", label: "Client call with LPG Travels", type: "Clients" },
-  { time: "15:00", label: "Life OS coding session", type: "Coding" },
-  { time: "18:00", label: "Content Recording", type: "Content" },
-  { time: "21:00", label: "Daily Review", type: "Personal" },
-];
-
-const typeColors: Record<string, string> = {
-  Personal: "bg-secondary/30 text-muted-foreground",
-  Academics: "bg-accent/15 text-accent",
-  Clients: "bg-warning/15 text-warning",
-  Coding: "bg-success/15 text-success",
-  Content: "bg-danger/15 text-danger",
+type Block = {
+  id: string;
+  title: string;
+  startAt: Date;
+  category: string;
 };
 
-export function TodaysSchedule() {
+const typeColors: Record<string, string> = {
+  PERSONAL: "bg-secondary/30 text-muted-foreground",
+  ACADEMICS: "bg-accent/15 text-accent",
+  CLIENTS: "bg-warning/15 text-warning",
+  CODING: "bg-success/15 text-success",
+  CONTENT: "bg-danger/15 text-danger",
+  CHURCH: "bg-accent/10 text-accent",
+  OTHER: "bg-muted text-muted-foreground",
+};
+
+export function TodaysSchedule({ schedule }: { schedule: Block[] }) {
   return (
     <Card className={dashboardCardClass()}>
       <CardHeader>
         <CardTitle>Today&apos;s Schedule</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {schedule.map((block) => (
-            <div
-              key={`${block.time}-${block.label}`}
-              className="flex items-center gap-4 rounded-lg border border-border/60 px-4 py-3"
-            >
-              <span className="w-14 shrink-0 text-xs font-medium text-muted-foreground">
-                {block.time}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{block.label}</p>
-              </div>
-              <span
-                className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-medium ${typeColors[block.type]}`}
+        {schedule.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No blocks yet.{" "}
+            <Link href="/planner" className="font-medium text-accent hover:underline">
+              Run daily setup
+            </Link>{" "}
+            on the Planner.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {schedule.map((block) => (
+              <div
+                key={block.id}
+                className="flex items-center gap-4 rounded-lg border border-border/60 px-4 py-3"
               >
-                {block.type}
-              </span>
-            </div>
-          ))}
-        </div>
+                <span className="w-14 shrink-0 text-xs font-medium text-muted-foreground">
+                  {formatTime(new Date(block.startAt))}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{block.title}</p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-md px-2 py-0.5 text-xs font-medium",
+                    typeColors[block.category] ?? typeColors.OTHER
+                  )}
+                >
+                  {block.category}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

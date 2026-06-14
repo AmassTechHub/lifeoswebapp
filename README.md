@@ -46,20 +46,23 @@ Open [http://localhost:3000](http://localhost:3000) — redirects to `/dashboard
 
 ## Modules
 
+Sidebar is grouped: **Today** → **Study & Create** → **Life** → **Assistant**.
+
 | Module | Route | Status |
 |--------|-------|--------|
-| Dashboard | `/dashboard` | Phase 1 — UI built |
-| Goals | `/goals` | Placeholder |
-| Planner | `/planner` | Placeholder |
-| Calendar | `/calendar` | Placeholder |
-| Tasks | `/tasks` | Placeholder |
-| Habits | `/habits` | Placeholder |
-| Learning | `/learning` | Placeholder |
-| Content Hub | `/content` | Placeholder |
-| Clients | `/clients` | Placeholder |
-| Finance | `/finance` | Placeholder |
-| AI Coach | `/coach` | Placeholder |
-| Settings | `/settings` | Placeholder |
+| Dashboard | `/dashboard` | Live — command center |
+| Focus | `/focus` | Live — lock-in timer (fullscreen) |
+| Goals | `/goals` | Live |
+| Tasks | `/tasks` | Live |
+| Habits | `/habits` | Live |
+| Learning | `/learning` | Live — notes, summaries, uploads, flashcards |
+| Content Hub | `/content` | Live — idea → published pipeline |
+| Finance | `/finance` | Live |
+| AI Coach | `/coach` | Live — chat (needs `OPENAI_API_KEY`) |
+| Planner | `/planner` | Live — automated daily setup |
+| Calendar | `/calendar` | Live |
+| Clients | `/clients` | Live — deliverables & deadlines |
+| Settings | `/settings` | Live |
 
 ---
 
@@ -71,13 +74,14 @@ Open [http://localhost:3000](http://localhost:3000) — redirects to `/dashboard
 
 ---
 
-## Development phases
+## Daily automation
 
-1. **Phase 1** — Core Life OS (4–6 weeks): Dashboard, Goals, Planner, Tasks, Auth
-2. **Phase 2** — Learning + Client System (2–3 weeks)
-3. **Phase 3** — Content Hub (2–3 weeks)
-4. **Phase 4** — AI Coach (3–4 weeks)
-5. **Phase 5** — AmassTechHub Intelligence (future)
+1. Add tasks, habits, clients, study courses, and content in Life OS
+2. Open **Planner** → **Run daily setup** (or use the dashboard quick action)
+3. Life OS generates today&apos;s calendar blocks, focus list, and daily score
+4. Optional: upload a timetable image (uses OpenAI vision when `OPENAI_API_KEY` is set)
+
+All features are built inside `LifeOS/` — no imports from other projects.
 
 ---
 

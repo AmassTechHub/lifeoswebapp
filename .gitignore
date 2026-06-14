@@ -38,6 +38,9 @@ yarn-error.log*
 /prisma/dev.db
 /prisma/dev.db-journal
 
+# uploads (study slides, PDFs)
+/public/uploads
+
 # clay mascots: use webp only (png are source exports)
 /public/clay/*.png
 

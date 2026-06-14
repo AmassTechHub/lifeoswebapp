@@ -26,13 +26,13 @@ export function AuthField({
       className="auth-field-enter space-y-2"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <Label htmlFor={fieldId} className="text-slate-700">
+      <Label htmlFor={fieldId} className="text-foreground">
         {label}
       </Label>
       <input
         id={fieldId}
         className={cn(
-          "flex h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-accent focus:bg-white focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50",
+          "flex h-11 w-full rounded-xl border border-border bg-muted/50 px-4 text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground/60 focus:border-accent focus:bg-background focus:ring-2 focus:ring-accent/15 disabled:cursor-not-allowed disabled:opacity-50",
           error && "border-danger/40 focus:border-danger focus:ring-danger/15",
           className
         )}

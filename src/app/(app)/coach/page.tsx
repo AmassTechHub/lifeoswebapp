@@ -1,10 +1,18 @@
-import { ModulePlaceholder } from "@/components/layout/ModulePlaceholder";
+import { CoachPanel } from "@/components/coach/CoachPanel";
+import { DashboardShell } from "@/components/layout/DashboardShell";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { requireSession } from "@/lib/session";
 
-export default function CoachPage() {
+export default async function CoachPage() {
+  await requireSession();
+
   return (
-    <ModulePlaceholder
-      title="AI Coach"
-      description="Daily planner, weekly review, goal coach, study coach, and content coach. The heart of Life OS."
-    />
+    <DashboardShell>
+      <PageHeader
+        title="AI Coach"
+        description="Plan your day, study smarter, script content, and get unstuck without leaving Life OS."
+      />
+      <CoachPanel />
+    </DashboardShell>
   );
 }
