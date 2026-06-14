@@ -12,6 +12,7 @@ import {
   Loader2,
   LogOut,
   Moon,
+  Smartphone,
   User,
 } from "lucide-react";
 
@@ -66,6 +67,146 @@ function loadPreferences(): Preferences {
 
 function savePreferences(prefs: Preferences) {
   localStorage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
+}
+
+function MoMoSettingsCard() {
+  const [subscriptionKey, setSubscriptionKey] = useState("");
+  const [userId, setUserId] = useState("");
+  const [apiSecret, setApiSecret] = useState("");
+  const [environment, setEnvironment] = useState<"sandbox" | "production">("sandbox");
+  const [configured, setConfigured] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [showKey, setShowKey] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/momo")
+      .then((r) => r.json())
+      .then((d) => {
+        setConfigured(d.configured);
+        setEnvironment(d.environment ?? "sandbox");
+      })
+      .catch(() => null);
+  }, []);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await fetch("/api/settings/momo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscriptionKey, userId, apiSecret, environment }),
+      });
+      setConfigured(!!(subscriptionKey && userId && apiSecret));
+      toast.success("MoMo credentials saved");
+      setSubscriptionKey("");
+      setUserId("");
+      setApiSecret("");
+    } catch {
+      toast.error("Failed to save credentials");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Smartphone className="h-4 w-4 text-accent" />
+            <CardTitle>MoMo integration</CardTitle>
+          </div>
+          {configured && (
+            <span className="flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-semibold text-success">
+              <Check className="h-3 w-3" />
+              Connected
+            </span>
+          )}
+        </div>
+        <CardDescription>
+          Connect your MTN MoMo API credentials so you can send money directly from Finance and have expenses tracked automatically.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 rounded-lg border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-warning">
+          <strong>Sandbox mode</strong> — these credentials work with MTN&apos;s free sandbox. Get yours at{" "}
+          <span className="underline">momoapi.mtn.com</span> → Developer Portal → Subscribe to Disbursements.
+          Switch to production when MTN approves your account.
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Subscription key (Ocp-Apim-Subscription-Key)</Label>
+            <div className="relative">
+              <Input
+                type={showKey ? "text" : "password"}
+                value={subscriptionKey}
+                onChange={(e) => setSubscriptionKey(e.target.value)}
+                placeholder={configured ? "••••••••••• (saved)" : "From MTN developer portal"}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowKey((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>User ID (UUID)</Label>
+            <Input
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder={configured ? "•••-•••-••• (saved)" : "UUID you created in sandbox"}
+              className="font-mono text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>API secret</Label>
+            <div className="relative">
+              <Input
+                type={showSecret ? "text" : "password"}
+                value={apiSecret}
+                onChange={(e) => setApiSecret(e.target.value)}
+                placeholder={configured ? "••••••••••• (saved)" : "Generated from your sandbox user"}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowSecret((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Environment</Label>
+            <select
+              value={environment}
+              onChange={(e) => setEnvironment(e.target.value as "sandbox" | "production")}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            >
+              <option value="sandbox">Sandbox (testing)</option>
+              <option value="production">Production (real money)</option>
+            </select>
+          </div>
+
+          <Button type="submit" disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+            Save MoMo credentials
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function PreferenceToggle({
@@ -357,6 +498,8 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
           </form>
         </CardContent>
       </Card>
+
+      <MoMoSettingsCard />
 
       <Card>
         <CardHeader>

@@ -7,15 +7,19 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Check,
+  CheckCircle2,
+  Clock,
   DollarSign,
   Loader2,
   Plus,
+  Smartphone,
   Trash2,
   TrendingDown,
   TrendingUp,
   Upload,
   Wallet,
   X,
+  XCircle,
 } from "lucide-react";
 
 import { createExpense, createIncome, deleteExpense } from "@/lib/actions/finance";
@@ -57,7 +61,14 @@ type ParsedRow = {
   category: string;
 };
 
-type DialogType = "expense" | "income" | "csv" | null;
+type MoMoSendState =
+  | { phase: "idle" }
+  | { phase: "sending" }
+  | { phase: "polling"; referenceId: string }
+  | { phase: "success"; amount: number; recipient: string }
+  | { phase: "error"; message: string };
+
+type DialogType = "expense" | "income" | "csv" | "momo" | null;
 
 const CATEGORY_KEYWORDS: Array<[string, string[]]> = [
   ["Transport", ["uber", "bolt", "trotro", "bus", "taxi", "fuel", "petrol", "transport", "ride"]],
@@ -156,7 +167,9 @@ export function FinancePanel({
   const [pending, startTransition] = useTransition();
   const [csvRows, setCsvRows] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
+  const [momoState, setMomoState] = useState<MoMoSendState>({ phase: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function handleAddExpense(fd: FormData) {
     const res = await createExpense(fd);
@@ -197,6 +210,59 @@ export function FinancePanel({
       setCsvRows(rows);
     };
     reader.readAsText(file);
+  }
+
+  async function handleMoMoSend(fd: FormData) {
+    const recipientPhone = String(fd.get("recipientPhone") ?? "").trim();
+    const recipientName = String(fd.get("recipientName") ?? "").trim();
+    const amount = parseFloat(String(fd.get("amount") ?? "0"));
+    const note = String(fd.get("note") ?? "").trim();
+
+    setMomoState({ phase: "sending" });
+
+    try {
+      const res = await fetch("/api/finance/momo/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipientPhone, recipientName, amount, note }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Send failed");
+
+      const { referenceId } = json as { referenceId: string };
+      setMomoState({ phase: "polling", referenceId });
+
+      // Poll every 3 seconds up to 2 minutes
+      let attempts = 0;
+      pollRef.current = setInterval(async () => {
+        attempts++;
+        if (attempts > 40) {
+          clearInterval(pollRef.current!);
+          setMomoState({ phase: "error", message: "Timed out waiting for MTN confirmation. Check your MoMo app." });
+          return;
+        }
+        try {
+          const statusRes = await fetch(`/api/finance/momo/status/${referenceId}`);
+          const statusJson = await statusRes.json() as { status: string };
+          if (statusJson.status === "SUCCESSFUL") {
+            clearInterval(pollRef.current!);
+            setMomoState({ phase: "success", amount, recipient: recipientName || recipientPhone });
+            router.refresh();
+          } else if (statusJson.status === "FAILED") {
+            clearInterval(pollRef.current!);
+            setMomoState({ phase: "error", message: "Transaction was declined by MTN." });
+          }
+        } catch {}
+      }, 3000);
+    } catch (err) {
+      setMomoState({ phase: "error", message: err instanceof Error ? err.message : "Send failed" });
+    }
+  }
+
+  function closeMoMoDialog() {
+    if (pollRef.current) clearInterval(pollRef.current);
+    setDialog(null);
+    setMomoState({ phase: "idle" });
   }
 
   async function handleImportSubmit() {
@@ -267,6 +333,14 @@ export function FinancePanel({
         >
           <Upload className="h-4 w-4" />
           Import CSV
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2 flex-1 border-warning/40 bg-warning/5 text-warning hover:bg-warning/10 hover:text-warning sm:flex-none"
+          onClick={() => { setMomoState({ phase: "idle" }); setDialog("momo"); }}
+        >
+          <Smartphone className="h-4 w-4" />
+          Send via MoMo
         </Button>
       </div>
 
@@ -553,6 +627,111 @@ export function FinancePanel({
               </Button>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* MoMo Send Dialog */}
+      <Dialog open={dialog === "momo"} onOpenChange={(v) => { if (!v) closeMoMoDialog(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="h-5 w-5 text-warning" />
+              Send via MoMo
+            </DialogTitle>
+          </DialogHeader>
+
+          {momoState.phase === "idle" && (
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleMoMoSend(new FormData(e.currentTarget)); }}
+              className="space-y-4"
+            >
+              <div className="space-y-1.5">
+                <Label>Recipient phone (MoMo number)</Label>
+                <Input name="recipientPhone" placeholder="0244 000 000" required autoFocus />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Recipient name (optional)</Label>
+                <Input name="recipientName" placeholder="Kwame, Ama..." />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Amount (₵)</Label>
+                <Input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label>What is this for?</Label>
+                <Input name="note" placeholder="Lunch, data, rent..." />
+              </div>
+              <p className="rounded-lg border border-muted bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+                MTN will send a USSD prompt to approve the transfer. The expense is logged automatically after approval.
+              </p>
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={closeMoMoDialog}>Cancel</Button>
+                <Button type="submit" className="gap-2 bg-warning text-white hover:bg-warning/90">
+                  <Smartphone className="h-4 w-4" />
+                  Send
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+
+          {momoState.phase === "sending" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-warning" />
+              <p className="text-sm font-medium">Sending request to MTN…</p>
+            </div>
+          )}
+
+          {momoState.phase === "polling" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-warning/10">
+                <Clock className="h-8 w-8 text-warning" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold">Waiting for your approval</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Check your phone — MTN will send a prompt to confirm the transfer.
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground/60">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Checking status…
+              </div>
+            </div>
+          )}
+
+          {momoState.phase === "success" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-success/10">
+                <CheckCircle2 className="h-8 w-8 text-success" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-success">Transfer successful</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ₵{momoState.amount.toFixed(2)} sent to {momoState.recipient}.<br />
+                  Expense logged automatically.
+                </p>
+              </div>
+              <Button onClick={closeMoMoDialog} className="mt-2">Done</Button>
+            </div>
+          )}
+
+          {momoState.phase === "error" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-danger/10">
+                <XCircle className="h-8 w-8 text-danger" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-danger">Transfer failed</p>
+                <p className="mt-1 text-xs text-muted-foreground">{momoState.message}</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setMomoState({ phase: "idle" })}
+                className="mt-2"
+              >
+                Try again
+              </Button>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

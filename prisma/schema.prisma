@@ -23,6 +23,14 @@ model User {
 
   openAiKey  String?
 
+  // MoMo integration
+  momoSubscriptionKey String? // Ocp-Apim-Subscription-Key from MTN portal
+  momoUserId          String? // UUID created on MTN sandbox
+  momoApiSecret       String? // API secret generated from MTN sandbox
+  momoEnvironment     String? @default("sandbox") // "sandbox" | "production"
+
+  momoTransactions MoMoTransaction[]
+
   // Onboarding
   onboardingCompleted Boolean @default(false)
   useCase             String? // JSON array: ["student","creator",...]
@@ -416,6 +424,25 @@ model StudySession {
   createdAt     DateTime     @default(now())
 
   @@index([userId, startedAt])
+}
+
+model MoMoTransaction {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referenceId    String   @unique // UUID sent to MTN as X-Reference-Id
+  recipientPhone String
+  recipientName  String?
+  amount         Float
+  currency       String   @default("GHS")
+  note           String?
+  status         String   @default("PENDING") // PENDING | SUCCESSFUL | FAILED
+  expenseId      String?  // set once expense is auto-logged
+  raw            String   @default("{}") // MTN response JSON
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 enum LifeCycleType {
