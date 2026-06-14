@@ -42,9 +42,9 @@ export function TodaysSchedule({ schedule }: { schedule: Block[] }) {
             {schedule.map((block) => (
               <div
                 key={block.id}
-                className="flex items-center gap-4 rounded-lg border border-border/60 px-4 py-3"
+                className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3 sm:gap-4 sm:px-4"
               >
-                <span className="w-14 shrink-0 text-xs font-medium text-muted-foreground">
+                <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground sm:w-14">
                   {formatTime(new Date(block.startAt))}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -52,11 +52,19 @@ export function TodaysSchedule({ schedule }: { schedule: Block[] }) {
                 </div>
                 <span
                   className={cn(
-                    "shrink-0 rounded-md px-2 py-0.5 text-xs font-medium",
+                    "hidden shrink-0 rounded-md px-2 py-0.5 text-xs font-medium sm:inline-block",
                     typeColors[block.category] ?? typeColors.OTHER
                   )}
                 >
                   {block.category}
+                </span>
+                <span
+                  className={cn(
+                    "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-medium sm:hidden",
+                    typeColors[block.category] ?? typeColors.OTHER
+                  )}
+                >
+                  {block.category.slice(0, 3)}
                 </span>
               </div>
             ))}

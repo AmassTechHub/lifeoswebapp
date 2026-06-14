@@ -17,6 +17,13 @@ export const metadata: Metadata = {
     "An AI-powered Personal Operating System for ambitious students, creators, founders, and professionals.",
   manifest: "/manifest.json",
   themeColor: "#3b82f6",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.svg",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

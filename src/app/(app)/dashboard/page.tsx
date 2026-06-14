@@ -1,4 +1,5 @@
 import { LifeEnginePanel } from "@/components/engine/LifeEnginePanel";
+import { AIUsageCard } from "@/components/dashboard/AIUsageCard";
 import { DailyScore } from "@/components/dashboard/DailyScore";
 import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
 import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
@@ -74,7 +75,7 @@ export default async function DashboardPage() {
       </StaggeredGrid>
 
       {/* Secondary: study + finance + deadlines */}
-      <StaggeredGrid className="mb-5 grid gap-5 sm:grid-cols-3">
+      <StaggeredGrid className="mb-5 grid gap-4 md:grid-cols-3">
         <StaggerItem>
           <StudySnapshot courses={data.studyCourses} recentNotes={data.recentNotes} />
         </StaggerItem>
@@ -91,11 +92,14 @@ export default async function DashboardPage() {
       </StaggeredGrid>
 
       {/* Tertiary: schedule + tools */}
-      <StaggeredGrid className="mb-5 grid gap-5 lg:grid-cols-3">
+      <StaggeredGrid className="mb-5 grid gap-4 lg:grid-cols-3">
         <StaggerItem className="lg:col-span-2">
           <TodaysSchedule schedule={data.schedule} />
         </StaggerItem>
-        <div className="space-y-5">
+        <div className="space-y-4">
+          <StaggerItem>
+            <AIUsageCard />
+          </StaggerItem>
           <StaggerItem>
             <TimetableUpload />
           </StaggerItem>

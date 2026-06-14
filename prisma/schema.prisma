@@ -21,7 +21,13 @@ model User {
   sessions Session[]
   accounts Account[]
 
-  openAiKey  String?
+  openAiKey  String? // stores Claude/Anthropic key (field name kept for compat)
+
+  // AI usage tracking
+  isPro               Boolean  @default(false)
+  aiMessagesUsedToday Int      @default(0)
+  aiResetDate         DateTime @default(now())
+  aiUsageLogs         AIUsageLog[]
 
   // MoMo integration
   momoSubscriptionKey String? // Ocp-Apim-Subscription-Key from MTN portal
@@ -443,6 +449,17 @@ model MoMoTransaction {
   updatedAt      DateTime @updatedAt
 
   @@index([userId, createdAt])
+}
+
+model AIUsageLog {
+  id     String   @id @default(cuid())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date   DateTime
+  count  Int      @default(0)
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 enum LifeCycleType {

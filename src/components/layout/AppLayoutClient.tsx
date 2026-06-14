@@ -23,7 +23,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
       <AppSidebar isOpen={open} onClose={() => setOpen(false)} />
 
       {/* Content column */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md lg:hidden">
           <span className="text-base font-semibold tracking-tight">Life OS</span>
@@ -37,7 +37,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
           </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
       </div>
 
       <CommandPalette />
