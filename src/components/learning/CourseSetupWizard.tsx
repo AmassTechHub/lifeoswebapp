@@ -60,25 +60,35 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
   async function applyKnustPreset() {
     setLoading(true);
     try {
-      const preset = await fetch("/api/setup/courses").then((r) => r.json());
+      // Fetch the preset (GET)
+      const presetRes = await fetch("/api/setup/courses");
+      if (!presetRes.ok) throw new Error(`Could not load course preset (${presetRes.status})`);
+      const preset = await presetRes.json() as { preset: { courses: { code: string }[] } };
       const selectedCourses = preset.preset.courses.filter(
         (c: { code: string }) => selected.has(c.code)
       );
 
+      // Apply the courses (POST) — can take up to 30s on first run
       const res = await fetch("/api/setup/courses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courses: selectedCourses, group: 1 }),
       });
-      const data = await res.json();
+
+      let data: { error?: string; coursesCreated?: number; generatedEvents?: number } = {};
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error("Server returned an unexpected response. Check your connection and try again.");
+      }
 
       if (!res.ok) throw new Error(data.error ?? "Setup failed");
 
-      setResult({ courses: data.coursesCreated, events: data.generatedEvents });
+      setResult({ courses: data.coursesCreated ?? 0, events: data.generatedEvents ?? 0 });
       setStep("done");
       router.refresh();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Setup failed");
+      toast.error(e instanceof Error ? e.message : "Setup failed. Try again.");
     } finally {
       setLoading(false);
     }

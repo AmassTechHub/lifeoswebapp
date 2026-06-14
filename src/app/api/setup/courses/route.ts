@@ -38,6 +38,9 @@ const WEEKDAY_MAP: Record<string, TimetableBlock["day"]> = {
   THURSDAY: "THURSDAY", FRIDAY: "FRIDAY", SATURDAY: "SATURDAY", SUNDAY: "SUNDAY",
 };
 
+// Allow up to 60 seconds on Vercel — this route does a lot of sequential DB work
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user) {
@@ -73,23 +76,28 @@ export async function POST(request: Request) {
     }
   }
 
-  // Override colors based on provided course colors (after apply creates courses)
-  const result = await applyTimetableBlocks(session.user.id, blocks, group);
+  try {
+    const result = await applyTimetableBlocks(session.user.id, blocks, group);
 
-  // Apply custom colors
-  for (const course of courses) {
-    await prisma.studyCourse.updateMany({
-      where: { userId: session.user.id, code: course.code },
-      data: { color: course.color, name: course.name },
+    // Apply custom colors
+    for (const course of courses) {
+      await prisma.studyCourse.updateMany({
+        where: { userId: session.user.id, code: course.code },
+        data: { color: course.color, name: course.name },
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      coursesCreated: result.coursesCreated,
+      courseNames: result.courseNames,
+      generatedEvents: result.generatedEvents,
     });
+  } catch (err) {
+    console.error("Setup courses error:", err);
+    const message = err instanceof Error ? err.message : "Setup failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({
-    ok: true,
-    coursesCreated: result.coursesCreated,
-    courseNames: result.courseNames,
-    generatedEvents: result.generatedEvents,
-  });
 }
 
 // GET: returns the KNUST CS3 Group 1 preset
