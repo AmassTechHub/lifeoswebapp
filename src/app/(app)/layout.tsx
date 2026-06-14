@@ -7,27 +7,35 @@ import { AppLayoutClient } from "@/components/layout/AppLayoutClient";
 export const dynamic = "force-dynamic";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession();
+  let session: Awaited<ReturnType<typeof getServerSession>>;
+  try {
+    session = await getServerSession();
+  } catch {
+    redirect("/login");
+  }
   if (!session) redirect("/login");
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      onboardingCompleted: true,
-      _count: { select: { studyCourses: true } },
-    },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        onboardingCompleted: true,
+        _count: { select: { studyCourses: true } },
+      },
+    });
 
-  if (!user?.onboardingCompleted) {
-    if ((user?._count.studyCourses ?? 0) > 0) {
-      // Silently graduate users who already set up courses before onboarding existed
-      await prisma.user.update({
-        where: { id: session.user.id },
-        data: { onboardingCompleted: true },
-      });
-    } else {
-      redirect("/onboarding");
+    if (!user?.onboardingCompleted) {
+      if ((user?._count.studyCourses ?? 0) > 0) {
+        await prisma.user.update({
+          where: { id: session.user.id },
+          data: { onboardingCompleted: true },
+        });
+      } else {
+        redirect("/onboarding");
+      }
     }
+  } catch {
+    // DB temporarily unreachable — still render the app shell
   }
 
   return <AppLayoutClient>{children}</AppLayoutClient>;
