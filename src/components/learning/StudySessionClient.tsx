@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,7 +9,9 @@ import {
   Check,
   ChevronRight,
   Loader2,
+  MessageSquare,
   RefreshCw,
+  SendHorizonal,
   Sparkles,
   X,
 } from "lucide-react";
@@ -60,6 +62,41 @@ export function StudySessionClient({
   const [missed, setMissed] = useState<Card[]>([]);
   const [sessionStart] = useState(() => Date.now());
   const [savingAnswer, setSavingAnswer] = useState(false);
+
+  // Concept chat
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ q: string; a: string; loading?: boolean }[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  async function askConcept(e: React.FormEvent) {
+    e.preventDefault();
+    const q = chatInput.trim();
+    if (!q || chatHistory.some((c) => c.loading)) return;
+    setChatInput("");
+    setChatHistory((prev) => [...prev, { q, a: "", loading: true }]);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+
+    try {
+      const res = await fetch("/api/study/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: course.id, question: q }),
+      });
+      const data = await res.json();
+      setChatHistory((prev) =>
+        prev.map((item) =>
+          item.loading ? { q, a: data.reply ?? "No answer available.", loading: false } : item
+        )
+      );
+    } catch {
+      setChatHistory((prev) =>
+        prev.map((item) =>
+          item.loading ? { q, a: "Could not reach AI. Check your connection.", loading: false } : item
+        )
+      );
+    }
+    setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+  }
 
   const currentCard = deck[idx];
   const totalCards = deck.length;
@@ -216,7 +253,57 @@ export function StudySessionClient({
             </div>
           )}
 
-          <div className="mt-8 flex gap-3">
+          {/* Concept chat */}
+          {hasAiKey && (
+            <div className="mt-6 rounded-xl border border-border/60 bg-card/50 px-5 py-4">
+              <div className="mb-3 flex items-center gap-2">
+                <MessageSquare className="h-3.5 w-3.5 text-accent" />
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/50">
+                  Ask anything about this course
+                </p>
+              </div>
+
+              {chatHistory.length > 0 && (
+                <div className="mb-3 max-h-56 space-y-3 overflow-y-auto">
+                  {chatHistory.map((item, i) => (
+                    <div key={i} className="space-y-1">
+                      <p className="text-[12px] font-semibold text-foreground">{item.q}</p>
+                      {item.loading ? (
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          Thinking...
+                        </div>
+                      ) : (
+                        <p className="text-[12px] leading-relaxed text-muted-foreground">
+                          {item.a}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+
+              <form onSubmit={askConcept} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Explain binary trees. What is time complexity of quicksort?"
+                  className="flex-1 rounded-lg border border-border bg-muted/50 px-3 py-2 text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent/15"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim() || chatHistory.some((c) => c.loading)}
+                  className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-2 text-[12px] font-semibold text-white transition-opacity disabled:opacity-40"
+                >
+                  <SendHorizonal className="h-3.5 w-3.5" />
+                </button>
+              </form>
+            </div>
+          )}
+
+          <div className="mt-6 flex gap-3">
             {totalCards > 0 && (
               <button
                 type="button"

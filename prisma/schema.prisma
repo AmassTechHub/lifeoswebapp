@@ -27,6 +27,7 @@ model User {
   onboardingCompleted Boolean @default(false)
   useCase             String? // JSON array: ["student","creator",...]
   primaryGoal         String?
+  workSchedule        String? // JSON: {"days":["Mon",...],"startTime":"09:00","endTime":"17:00"}
 
   goals      Goal[]
   tasks      Task[]

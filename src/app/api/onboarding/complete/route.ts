@@ -13,6 +13,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const useCases = Array.isArray(body.useCases) ? body.useCases : [];
   const primaryGoal = typeof body.primaryGoal === "string" ? body.primaryGoal.trim() : null;
+  const workSchedule = typeof body.workSchedule === "string" ? body.workSchedule : null;
 
   await prisma.user.update({
     where: { id: session.user.id },
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
       onboardingCompleted: true,
       useCase: JSON.stringify(useCases),
       primaryGoal: primaryGoal || null,
+      workSchedule: workSchedule || null,
     },
   });
 
