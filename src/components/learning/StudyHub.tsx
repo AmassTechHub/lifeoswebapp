@@ -10,12 +10,15 @@ import {
   GraduationCap,
   Layers,
   Loader2,
+  Play,
   Plus,
   Sparkles,
   Trash2,
   Upload,
   CalendarPlus,
 } from "lucide-react";
+
+import Link from "next/link";
 
 import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
@@ -397,22 +400,31 @@ export function StudyHub({
                     <p className="text-sm text-muted-foreground">{selected.code}</p>
                   )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-danger hover:text-danger"
-                  onClick={() => {
-                    if (confirm("Delete this course and all notes?")) {
-                      startTransition(async () => {
-                        await deleteStudyCourse(selected.id);
-                        toast.success("Course deleted");
-                        router.refresh();
-                      });
-                    }
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/session/${selected.id}`}
+                    className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  >
+                    <Play className="h-3.5 w-3.5" />
+                    Study session
+                  </Link>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-danger hover:text-danger"
+                    onClick={() => {
+                      if (confirm("Delete this course and all notes?")) {
+                        startTransition(async () => {
+                          await deleteStudyCourse(selected.id);
+                          toast.success("Course deleted");
+                          router.refresh();
+                        });
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
 
               {/* Tabs */}

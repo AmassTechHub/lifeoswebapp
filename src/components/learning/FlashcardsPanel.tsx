@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
-import { Layers, Loader2, Plus, RotateCcw, Trash2 } from "lucide-react";
+import { Layers, Loader2, Play, Plus, RotateCcw, Trash2 } from "lucide-react";
 
 import { createFlashcard, deleteFlashcard } from "@/lib/actions/flashcards";
 import { Button } from "@/components/ui/button";
@@ -53,15 +54,26 @@ export function FlashcardsPanel({
     <div className="space-y-6">
       <Card className="border-border/70 bg-card/80">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Layers className="h-4 w-4 text-accent" />
-            Flashcards
-            {courseName && (
-              <span className="text-sm font-normal text-muted-foreground">
-                · {courseName}
-              </span>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Layers className="h-4 w-4 text-accent" />
+              Flashcards
+              {courseName && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  · {courseName}
+                </span>
+              )}
+            </CardTitle>
+            {courseId && deck.length > 0 && (
+              <Link
+                href={`/session/${courseId}`}
+                className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                <Play className="h-3 w-3" />
+                Study session
+              </Link>
             )}
-          </CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
           {deck.length === 0 ? (

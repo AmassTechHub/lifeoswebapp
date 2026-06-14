@@ -23,6 +23,11 @@ model User {
 
   openAiKey  String?
 
+  // Onboarding
+  onboardingCompleted Boolean @default(false)
+  useCase             String? // JSON array: ["student","creator",...]
+  primaryGoal         String?
+
   goals      Goal[]
   tasks      Task[]
   habits     Habit[]
@@ -31,8 +36,9 @@ model User {
   clients    Client[]
   learnings  LearningTopic[]
   content    ContentItem[]
-  studyCourses StudyCourse[]
-  flashcards   Flashcard[]
+  studyCourses  StudyCourse[]
+  flashcards    Flashcard[]
+  studySessions StudySession[]
   calendarEvents CalendarEvent[]
   timetableFiles TimetableFile[]
   daySnapshots   DaySnapshot[]
@@ -317,12 +323,13 @@ model StudyCourse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  notes           StudyNote[]
-  materials       StudyMaterial[]
-  flashcards      Flashcard[]
-  tasks           Task[]
-  calendarEvents  CalendarEvent[]
-  scheduleSlots   CourseSchedule[]
+  notes          StudyNote[]
+  materials      StudyMaterial[]
+  flashcards     Flashcard[]
+  tasks          Task[]
+  calendarEvents CalendarEvent[]
+  scheduleSlots  CourseSchedule[]
+  studySessions  StudySession[]
 }
 
 model CourseSchedule {
@@ -344,8 +351,13 @@ model Flashcard {
   course    StudyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
   front     String
   back      String
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  // Spaced repetition
+  difficulty     Int       @default(0) // 0=new, 1=easy, 2=medium, 3=hard
+  reviewCount    Int       @default(0)
+  lastReviewedAt DateTime?
+  nextReviewAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 enum StudyNoteType {
@@ -387,6 +399,22 @@ model WorkspaceDoc {
   pinned    Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model StudySession {
+  id            String       @id @default(cuid())
+  userId        String
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId      String?
+  course        StudyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  cardsReviewed Int          @default(0)
+  cardsCorrect  Int          @default(0)
+  durationSecs  Int          @default(0)
+  startedAt     DateTime     @default(now())
+  endedAt       DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@index([userId, startedAt])
 }
 
 enum LifeCycleType {
