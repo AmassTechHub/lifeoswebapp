@@ -39,7 +39,7 @@ export function AuthField({
         {...props}
       />
       {hint && !error && (
-        <p className="text-xs text-slate-500">{hint}</p>
+        <p className="text-xs text-muted-foreground">{hint}</p>
       )}
       {error && <p className="text-xs text-danger">{error}</p>}
     </div>

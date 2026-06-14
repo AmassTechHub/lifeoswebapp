@@ -15,6 +15,7 @@ type LifeEnginePanelProps = {
   initialMessage?: string | null;
   autoRan?: boolean;
   pulseStatus?: "ok" | "warning" | "critical";
+  compact?: boolean;
 };
 
 const statusStyles = {
@@ -27,6 +28,7 @@ export function LifeEnginePanel({
   initialMessage,
   autoRan = false,
   pulseStatus = "ok",
+  compact = false,
 }: LifeEnginePanelProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -61,6 +63,52 @@ export function LifeEnginePanel({
     });
   }
 
+  if (compact) {
+    return (
+      <div className="mb-5 flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-card/60 px-4 py-2.5">
+        <Cpu className="h-3.5 w-3.5 shrink-0 text-accent" />
+        <span
+          className={cn(
+            "h-1.5 w-1.5 shrink-0 rounded-full",
+            status === "ok" ? "bg-success" : status === "warning" ? "bg-warning" : "bg-danger"
+          )}
+        />
+        <p className="flex-1 truncate text-[12px] text-muted-foreground">
+          {message}
+          {autoRan && !message?.includes("morning") && (
+            <span className="ml-1 text-accent">Morning cycle ran.</span>
+          )}
+        </p>
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            onClick={() => runEngine("morning")}
+            disabled={pending}
+            className="flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground disabled:opacity-40"
+          >
+            <Sun className="h-3 w-3" />
+            Morning
+          </button>
+          <button
+            onClick={() => runEngine("evening")}
+            disabled={pending}
+            className="flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground disabled:opacity-40"
+          >
+            <Moon className="h-3 w-3" />
+            Evening
+          </button>
+          <button
+            onClick={() => runEngine("full")}
+            disabled={pending}
+            className="flex items-center gap-1 rounded-md bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent transition-colors hover:bg-accent/20 disabled:opacity-40"
+          >
+            {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Zap className="h-3 w-3" />}
+            Run
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -75,12 +123,8 @@ export function LifeEnginePanel({
           </div>
           <div>
             <p className="text-sm font-semibold tracking-tight">Life OS Engine</p>
-            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Automated morning, evening, and weekly cycles. Plans your day, carries tasks,
-              links study to your timetable, and keeps one pulse for everything.
-            </p>
             {autoRan && (
-              <p className="mt-2 text-xs text-accent">Auto-started your morning cycle today.</p>
+              <p className="mt-1 text-xs text-accent">Auto-started your morning cycle today.</p>
             )}
           </div>
         </div>
