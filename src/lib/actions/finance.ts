@@ -49,6 +49,37 @@ export async function deleteExpense(id: string) {
   return { ok: true };
 }
 
+export async function getMonthlySpending(userId: string): Promise<{ month: string; year: number; total: number }[]> {
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  const expenses = await prisma.expense.findMany({
+    where: { userId, date: { gte: sixMonthsAgo } },
+    select: { amount: true, date: true },
+  });
+
+  const byMonth = new Map<string, number>();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    byMonth.set(`${d.getFullYear()}-${d.getMonth()}`, 0);
+  }
+
+  for (const exp of expenses) {
+    const key = `${exp.date.getFullYear()}-${exp.date.getMonth()}`;
+    if (byMonth.has(key)) byMonth.set(key, (byMonth.get(key) ?? 0) + exp.amount);
+  }
+
+  return Array.from(byMonth.entries()).map(([key, total]) => {
+    const [year, month] = key.split("-").map(Number);
+    const d = new Date(year, month, 1);
+    return {
+      month: d.toLocaleDateString("en-US", { month: "short" }),
+      year: d.getFullYear(),
+      total: Math.round(total * 100) / 100,
+    };
+  });
+}
+
 export async function getFinanceSummary(userId: string) {
   const monthStart = new Date();
   monthStart.setDate(1);

@@ -1,5 +1,6 @@
 import { LifeEnginePanel } from "@/components/engine/LifeEnginePanel";
 import { DailyScore } from "@/components/dashboard/DailyScore";
+import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
 import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
 import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
 import { SmartActions, TimetableUpload } from "@/components/dashboard/SmartSystem";
@@ -43,6 +44,12 @@ export default async function DashboardPage() {
           </h1>
         </div>
       </header>
+
+      {/* Deadline alert */}
+      <DeadlineBanner
+        overdueCount={context.tasks.overdueCount}
+        dueTodayCount={context.tasks.dueToday.length}
+      />
 
       {/* Engine status bar */}
       <LifeEnginePanel

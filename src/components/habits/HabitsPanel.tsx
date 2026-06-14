@@ -142,22 +142,23 @@ export function HabitsPanel({
             return (
               <Card key={habit.id} className="border-border/70 bg-card/80 overflow-hidden">
                 <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
+                  {/* Top row: check + name + delete */}
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={() => handleToggle(habit.id)}
                       className={cn(
-                        "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border-2 transition-all duration-200",
+                        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 transition-all duration-200",
                         doneToday
-                          ? "border-transparent text-white shadow-lg"
+                          ? "border-transparent text-white shadow-md"
                           : "border-border bg-background hover:border-accent/50"
                       )}
                       style={doneToday ? { backgroundColor: habit.color } : {}}
                     >
                       {doneToday ? (
-                        <Check className="h-5 w-5" />
+                        <Check className="h-4 w-4" />
                       ) : (
-                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: habit.color }} />
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: habit.color }} />
                       )}
                     </button>
 
@@ -165,28 +166,28 @@ export function HabitsPanel({
                       <div className="flex items-center gap-2">
                         <p className="font-semibold text-sm">{habit.name}</p>
                         {streak > 0 && (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-bold text-warning">
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-bold text-warning">
                             <Flame className="h-2.5 w-2.5" />
                             {streak}
                           </span>
                         )}
                       </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {total} / {days} days · {streak > 0 ? `${streak}-day streak` : "Start your streak today"}
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {total}/{days} days · {streak > 0 ? `${streak}-day streak` : "No streak yet"}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <HeatmapRow logDates={habit.logDates} color={habit.color} />
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(habit.id, habit.name)}
-                        className="ml-2 rounded-lg p-1.5 text-muted-foreground/30 transition-colors hover:bg-danger/10 hover:text-danger"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(habit.id, habit.name)}
+                      className="rounded-lg p-1.5 text-muted-foreground/30 transition-colors hover:bg-danger/10 hover:text-danger"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
+
+                  {/* Heatmap: full 28-day grid */}
+                  <HeatmapRow logDates={habit.logDates} color={habit.color} />
                 </CardContent>
               </Card>
             );
@@ -205,15 +206,17 @@ export function HabitsPanel({
 }
 
 function HeatmapRow({ logDates, color }: { logDates: boolean[]; color: string }) {
-  const recent = logDates.slice(-14);
   return (
-    <div className="hidden sm:flex items-center gap-0.5">
-      {recent.map((done, i) => (
+    <div className="mt-3 flex items-center gap-0.5 overflow-x-auto pb-0.5">
+      {logDates.map((done, i) => (
         <div
           key={i}
-          className={cn("h-3.5 w-3.5 rounded-sm transition-opacity", done ? "opacity-100" : "opacity-10")}
+          className={cn(
+            "h-2.5 w-2.5 shrink-0 rounded-sm transition-opacity",
+            done ? "opacity-100" : "opacity-[0.08]"
+          )}
           style={{ backgroundColor: color }}
-          title={`Day ${logDates.length - 14 + i + 1}`}
+          title={`Day ${i + 1}`}
         />
       ))}
     </div>

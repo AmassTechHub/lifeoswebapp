@@ -5,13 +5,44 @@ import { getUserContextSummary } from "@/lib/ai/user-context";
 import { prisma } from "@/lib/prisma";
 import { headers } from "next/headers";
 
-const SYSTEM_PROMPT = `You are Life OS AI Coach — a focused assistant for Theophilus Amankwah.
-You help with: daily planning, study (notes, summaries, flashcards), content creation (YouTube/scripts),
-tasks, goals, habits, and finance awareness.
-Keep answers practical, short, and actionable. No fluff.
-If asked to plan a day, use bullet points with times.
-If asked for study help, explain clearly like a tutor.
-If asked for content, suggest hooks, outlines, or script beats.`;
+function buildSystemPrompt(user: {
+  name: string;
+  primaryGoal: string | null;
+  useCase: string | null;
+  workSchedule: string | null;
+}): string {
+  const parts: string[] = [];
+  parts.push(`You are Life OS AI Coach for ${user.name}.`);
+  parts.push(
+    "You help with: daily planning, study (notes, summaries, flashcards), content creation, tasks, goals, habits, and finance awareness."
+  );
+  if (user.primaryGoal) {
+    parts.push(`Their current primary goal: "${user.primaryGoal}".`);
+  }
+  if (user.useCase) {
+    try {
+      const cases = JSON.parse(user.useCase) as string[];
+      if (cases.length > 0) parts.push(`They use Life OS for: ${cases.join(", ")}.`);
+    } catch {}
+  }
+  if (user.workSchedule) {
+    try {
+      const s = JSON.parse(user.workSchedule) as {
+        days?: string[];
+        startTime?: string;
+        endTime?: string;
+      };
+      if (s.days && s.startTime && s.endTime) {
+        parts.push(`Work schedule: ${s.days.join(", ")}, ${s.startTime}–${s.endTime}.`);
+      }
+    } catch {}
+  }
+  parts.push("Keep answers practical, short, and actionable. No fluff.");
+  parts.push("If asked to plan a day, use bullet points with times.");
+  parts.push("If asked for study help, explain clearly like a tutor.");
+  parts.push("If asked for content, suggest hooks, outlines, or script beats.");
+  return parts.join("\n");
+}
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -29,7 +60,10 @@ export async function POST(request: Request) {
 
   const [context, userRecord] = await Promise.all([
     getUserContextSummary(session.user.id),
-    prisma.user.findUnique({ where: { id: session.user.id }, select: { openAiKey: true } }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { openAiKey: true, name: true, primaryGoal: true, useCase: true, workSchedule: true },
+    }),
   ]);
   const apiKey = (userRecord?.openAiKey?.trim() || process.env.OPENAI_API_KEY?.trim()) ?? "";
   if (!apiKey) {
@@ -40,10 +74,17 @@ export async function POST(request: Request) {
     });
   }
 
+  const systemPrompt = buildSystemPrompt({
+    name: userRecord?.name ?? session.user.name ?? "there",
+    primaryGoal: userRecord?.primaryGoal ?? null,
+    useCase: userRecord?.useCase ?? null,
+    workSchedule: userRecord?.workSchedule ?? null,
+  });
+
   const messages = [
     {
       role: "system",
-      content: `${SYSTEM_PROMPT}\n\nLive user context:\n${JSON.stringify(context)}`,
+      content: `${systemPrompt}\n\nLive context:\n${JSON.stringify(context)}`,
     },
     ...history
       .slice(-12)

@@ -83,7 +83,7 @@ export function CoachPanel() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] min-h-130 flex-col gap-4">
+    <div className="flex h-[calc(100dvh-10rem)] min-h-96 flex-col gap-4">
       {/* Starter prompts */}
       <div className="flex flex-wrap gap-2">
         {STARTERS.map((s) => (
@@ -177,7 +177,7 @@ function MessageBubble({ message: m }: { message: Message }) {
       </div>
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+          "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[80%]",
           isUser
             ? "rounded-tr-none bg-accent text-white"
             : "rounded-tl-none bg-muted text-foreground"

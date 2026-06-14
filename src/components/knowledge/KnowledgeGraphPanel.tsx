@@ -1,67 +1,107 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GitBranch, Loader2 } from "lucide-react";
+import { BookOpen, Loader2 } from "lucide-react";
 
 import { dashboardCardClass } from "@/components/dashboard/dashboard-styles";
 import { cn } from "@/lib/utils";
 
-type GraphNode = {
+type CourseActivity = {
   id: string;
-  type: "course" | "task" | "event";
-  label: string;
-  meta: Record<string, number>;
-};
-
-type GraphData = {
-  nodes: GraphNode[];
-  edges: { from: string; to: string; label: string }[];
+  name: string;
+  color: string;
+  noteCount: number;
+  materialCount: number;
+  flashcardCount: number;
+  dueCards: number;
+  lastSession: { at: string; score: number | null } | null;
 };
 
 export function KnowledgeGraphPanel() {
-  const [data, setData] = useState<GraphData | null>(null);
+  const [courses, setCourses] = useState<CourseActivity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/knowledge/graph")
       .then((r) => r.json())
-      .then((g) => setData(g))
+      .then((data) => setCourses(data.courses ?? []))
       .finally(() => setLoading(false));
   }, []);
-
-  const courses = data?.nodes.filter((n) => n.type === "course") ?? [];
 
   return (
     <div className={cn(dashboardCardClass(), "p-5")}>
       <div className="mb-4 flex items-center gap-2">
-        <GitBranch className="h-5 w-5 text-accent" />
-        <h2 className="text-sm font-semibold">Knowledge graph</h2>
+        <BookOpen className="h-5 w-5 text-accent" />
+        <h2 className="text-sm font-semibold">Learning activity</h2>
       </div>
+
       {loading && (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Mapping courses to tasks and classes…
+          Loading courses…
         </p>
       )}
+
       {!loading && courses.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          Upload a timetable or add study courses to see connections.
+          Add study courses in Learning to track your progress here.
         </p>
       )}
+
       {!loading && courses.length > 0 && (
         <ul className="space-y-3">
           {courses.map((course) => {
-            const linked =
-              data?.edges.filter((e) => e.from === course.id).length ?? 0;
+            const reviewed = course.flashcardCount - course.dueCards;
+            const pct =
+              course.flashcardCount > 0 ? (reviewed / course.flashcardCount) * 100 : 0;
+            const lastStudied = course.lastSession
+              ? new Date(course.lastSession.at).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              : null;
+
             return (
               <li
                 key={course.id}
-                className="rounded-lg border border-border/60 bg-background/50 px-3 py-2"
+                className="rounded-xl border border-border/60 bg-background/50 px-3 py-3"
               >
-                <p className="text-sm font-medium">{course.label}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {course.meta.notes ?? 0} notes · {course.meta.materials ?? 0}{" "}
-                  materials · {course.meta.tasks ?? 0} tasks · {linked} links
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <div
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: course.color }}
+                    />
+                    <p className="truncate text-sm font-semibold">{course.name}</p>
+                  </div>
+                  {course.dueCards > 0 && (
+                    <span className="shrink-0 rounded-full bg-warning/10 px-1.5 py-0.5 text-[10px] font-bold text-warning">
+                      {course.dueCards} due
+                    </span>
+                  )}
+                  {course.dueCards === 0 && course.flashcardCount > 0 && (
+                    <span className="shrink-0 rounded-full bg-success/10 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                      all caught up
+                    </span>
+                  )}
+                </div>
+
+                {course.flashcardCount > 0 && (
+                  <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-accent transition-all duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                )}
+
+                <p className="mt-1.5 text-[11px] text-muted-foreground">
+                  {course.noteCount} notes · {course.materialCount} files ·{" "}
+                  {course.flashcardCount} cards
+                  {lastStudied ? ` · Studied ${lastStudied}` : " · Not studied yet"}
+                  {course.lastSession?.score != null
+                    ? ` (${course.lastSession.score}%)`
+                    : ""}
                 </p>
               </li>
             );
