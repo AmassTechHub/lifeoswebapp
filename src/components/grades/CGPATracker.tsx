@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Award, BookOpen, Loader2, Pencil, Plus, Trash2, TrendingUp, X } from "lucide-react";
 
-import { createGrade, updateGrade, deleteGrade, KNUST_GRADES } from "@/lib/actions/grades";
+import { createGrade, updateGrade, deleteGrade } from "@/lib/actions/grades";
+import { KNUST_GRADES } from "@/lib/grades-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
