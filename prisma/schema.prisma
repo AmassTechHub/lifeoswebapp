@@ -41,6 +41,7 @@ model User {
   savingsGoals     SavingsGoal[]
   courseGrades     CourseGrade[]
   journalEntries   JournalEntry[]
+  deadlines        Deadline[]
 
   // Onboarding
   onboardingCompleted Boolean @default(false)
@@ -350,6 +351,7 @@ model StudyCourse {
   calendarEvents CalendarEvent[]
   scheduleSlots  CourseSchedule[]
   studySessions  StudySession[]
+  deadlines      Deadline[]
 }
 
 model CourseSchedule {
@@ -549,4 +551,22 @@ model JournalEntry {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+model Deadline {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  type      String      @default("ASSIGNMENT")
+  courseId  String?
+  course    StudyCourse? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  dueDate   DateTime
+  completed Boolean     @default(false)
+  notes     String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId, dueDate])
+  @@index([userId, completed])
 }

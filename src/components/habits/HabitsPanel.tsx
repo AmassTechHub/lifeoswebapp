@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Flame, Loader2, Plus, Trash2, Zap } from "lucide-react";
+import { Brain, Check, Flame, Loader2, Plus, Trash2, X, Zap } from "lucide-react";
 
 import { createHabit, deleteHabit, toggleHabitToday } from "@/lib/actions/habits";
 import { Button } from "@/components/ui/button";
@@ -96,11 +96,26 @@ export function HabitsPanel({
     }
   }
 
+  const [insights, setInsights] = useState<string | null>(null);
+  const [insightLoading, setInsightLoading] = useState(false);
   const totalDoneToday = habits.filter((h) => h.logDates[todayIndex]).length;
+
+  async function fetchInsights() {
+    setInsightLoading(true);
+    try {
+      const res = await fetch("/api/ai/habit-insights", { method: "POST" });
+      const data = await res.json();
+      setInsights(data.insights ?? "No insights returned.");
+    } catch {
+      setInsights("Could not load insights. Try again.");
+    } finally {
+      setInsightLoading(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning/10">
             <Flame className="h-5 w-5 text-warning" />
@@ -114,11 +129,35 @@ export function HabitsPanel({
             </p>
           </div>
         </div>
-        <Button size="sm" className="gap-2" onClick={() => setAddOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Add habit
-        </Button>
+        <div className="flex gap-2">
+          {habits.length > 0 && (
+            <Button size="sm" variant="outline" className="gap-2" onClick={fetchInsights} disabled={insightLoading}>
+              {insightLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+              AI Insights
+            </Button>
+          )}
+          <Button size="sm" className="gap-2" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Add habit
+          </Button>
+        </div>
       </div>
+
+      {/* AI Insights panel */}
+      {insights && (
+        <div className="relative rounded-xl border border-accent/30 bg-accent/5 p-4">
+          <button
+            onClick={() => setInsights(null)}
+            className="absolute right-3 top-3 rounded-full p-0.5 text-muted-foreground/40 hover:text-muted-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+          <div className="flex items-start gap-3">
+            <Brain className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+            <p className="text-sm leading-relaxed text-foreground/90 whitespace-pre-wrap pr-4">{insights}</p>
+          </div>
+        </div>
+      )}
 
       {habits.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">

@@ -315,6 +315,13 @@ export function FinancePanel({
   const netPositive = data.net >= 0;
   const maxMonthly = Math.max(...monthlySpending.map((d) => d.total), 1);
 
+  // Spending prediction: extrapolate to end of month
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const projectedMonthly = dayOfMonth > 0 ? (data.totalExpenses / dayOfMonth) * daysInMonth : 0;
+  const dailyRate = dayOfMonth > 0 ? data.totalExpenses / dayOfMonth : 0;
+
   return (
     <div className="space-y-6">
       {/* Tab switcher */}
@@ -439,6 +446,44 @@ export function FinancePanel({
                 );
               })}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Spending prediction */}
+      {data.totalExpenses > 0 && (
+        <Card className="border-border/70 bg-card/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <TrendingUp className="h-4 w-4 text-accent" />
+              Spending prediction
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl bg-muted/30 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Daily rate</p>
+                <p className="mt-1 text-xl font-bold tabular-nums">₵{dailyRate.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">avg per day</p>
+              </div>
+              <div className="rounded-xl bg-muted/30 p-3 text-center">
+                <p className="text-xs text-muted-foreground">So far ({dayOfMonth}d)</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-danger">₵{data.totalExpenses.toFixed(2)}</p>
+                <p className="text-[10px] text-muted-foreground">spent this month</p>
+              </div>
+              <div className={cn("rounded-xl p-3 text-center", projectedMonthly > data.totalIncome ? "bg-danger/10" : "bg-success/10")}>
+                <p className="text-xs text-muted-foreground">Month-end forecast</p>
+                <p className={cn("mt-1 text-xl font-bold tabular-nums", projectedMonthly > data.totalIncome ? "text-danger" : "text-success")}>
+                  ₵{projectedMonthly.toFixed(2)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">at this rate</p>
+              </div>
+            </div>
+            {projectedMonthly > data.totalIncome && data.totalIncome > 0 && (
+              <p className="mt-3 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
+                At this rate, your expenses will exceed your income by ₵{(projectedMonthly - data.totalIncome).toFixed(2)} this month.
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

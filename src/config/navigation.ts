@@ -1,8 +1,10 @@
 import {
   Award,
+  BarChart2,
   Bot,
   Calendar,
   CheckSquare,
+  ClipboardList,
   DollarSign,
   Flame,
   Focus,
@@ -46,6 +48,8 @@ export const navSections: NavSection[] = [
     items: [
       { title: "Learning", href: "/learning", icon: GraduationCap },
       { title: "CGPA Tracker", href: "/grades", icon: Award },
+      { title: "Deadlines", href: "/deadlines", icon: ClipboardList },
+      { title: "Study Analytics", href: "/analytics", icon: BarChart2 },
       { title: "Content Hub", href: "/content", icon: Video },
     ],
   },
