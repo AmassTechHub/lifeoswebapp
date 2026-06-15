@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/session";
 import { AppLayoutClient } from "@/components/layout/AppLayoutClient";
 import { PWARegister } from "@/components/pwa/PWARegister";
+import { QuickAdd } from "@/components/layout/QuickAdd";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <>
       <AppLayoutClient>{children}</AppLayoutClient>
+      <QuickAdd />
       <PWARegister />
     </>
   );

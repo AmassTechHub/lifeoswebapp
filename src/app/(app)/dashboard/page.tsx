@@ -1,5 +1,6 @@
 import { LifeEnginePanel } from "@/components/engine/LifeEnginePanel";
 import { AIUsageCard } from "@/components/dashboard/AIUsageCard";
+import { WeeklyAIPlanner } from "@/components/dashboard/WeeklyAIPlanner";
 import { DailyScore } from "@/components/dashboard/DailyScore";
 import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
 import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
@@ -110,6 +111,11 @@ export default async function DashboardPage() {
       </StaggeredGrid>
 
       <ProgressOverview progress={data.progress} />
+
+      {/* AI Weekly Planner */}
+      <div className="mt-5">
+        <WeeklyAIPlanner />
+      </div>
     </DashboardShell>
   );
 }

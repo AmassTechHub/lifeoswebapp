@@ -1,4 +1,5 @@
 import {
+  Award,
   Bot,
   Calendar,
   CheckSquare,
@@ -7,6 +8,7 @@ import {
   Focus,
   GraduationCap,
   LayoutDashboard,
+  NotebookPen,
   PenLine,
   FileText,
   Settings,
@@ -26,7 +28,6 @@ export type NavSection = {
   items: NavItem[];
 };
 
-/** Sidebar grouped by how you actually use Life OS — one area at a time. */
 export const navSections: NavSection[] = [
   {
     label: "Today",
@@ -37,12 +38,14 @@ export const navSections: NavSection[] = [
       { title: "Workspace", href: "/workspace", icon: FileText },
       { title: "Calendar", href: "/calendar", icon: Calendar },
       { title: "Tasks", href: "/tasks", icon: CheckSquare },
+      { title: "Journal", href: "/journal", icon: NotebookPen },
     ],
   },
   {
     label: "Study & Create",
     items: [
       { title: "Learning", href: "/learning", icon: GraduationCap },
+      { title: "CGPA Tracker", href: "/grades", icon: Award },
       { title: "Content Hub", href: "/content", icon: Video },
     ],
   },
@@ -67,7 +70,6 @@ export const settingsNavItem: NavItem = {
   icon: Settings,
 };
 
-/** Flat list for matchers and legacy use */
 export const navItems = [
   ...navSections.flatMap((s) => s.items),
   settingsNavItem,
