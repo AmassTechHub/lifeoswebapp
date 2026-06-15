@@ -25,8 +25,8 @@ import {
   createSavingsGoal,
   updateSavingsGoal,
   deleteSavingsGoal,
-  DEFAULT_CATEGORIES,
 } from "@/lib/actions/budget";
+import { DEFAULT_CATEGORIES } from "@/lib/budget-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {

@@ -5,21 +5,6 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "@/lib/actions/auth";
 import { prisma } from "@/lib/prisma";
 
-const DEFAULT_CATEGORIES = [
-  { name: "Food & Drinks", emoji: "🍽️" },
-  { name: "Transport", emoji: "🚌" },
-  { name: "Education", emoji: "📚" },
-  { name: "Data & Airtime", emoji: "📱" },
-  { name: "Entertainment", emoji: "🎮" },
-  { name: "Personal Care", emoji: "🧴" },
-  { name: "Health", emoji: "💊" },
-  { name: "Clothing", emoji: "👕" },
-  { name: "Utilities", emoji: "💡" },
-  { name: "Savings", emoji: "💰" },
-];
-
-export { DEFAULT_CATEGORIES };
-
 export async function getBudgetData(userId: string) {
   const now = new Date();
   const month = now.getMonth() + 1;
