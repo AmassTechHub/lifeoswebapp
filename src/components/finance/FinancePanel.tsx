@@ -11,6 +11,7 @@ import {
   Clock,
   DollarSign,
   Loader2,
+  PiggyBank,
   Plus,
   Smartphone,
   Trash2,
@@ -23,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { createExpense, createIncome, deleteExpense } from "@/lib/actions/finance";
+import { BudgetPlanner } from "@/components/finance/BudgetPlanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -54,6 +56,22 @@ type Summary = {
 
 type MonthData = { month: string; year: number; total: number };
 
+type BudgetRow = {
+  id: string;
+  name: string;
+  monthlyLimit: number;
+  emoji: string;
+};
+
+type SavingsGoal = {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: Date | null;
+  emoji: string;
+};
+
 type ParsedRow = {
   date: string;
   description: string;
@@ -69,6 +87,7 @@ type MoMoSendState =
   | { phase: "error"; message: string };
 
 type DialogType = "expense" | "income" | "csv" | "momo" | null;
+type Tab = "overview" | "budget";
 
 const CATEGORY_KEYWORDS: Array<[string, string[]]> = [
   ["Transport", ["uber", "bolt", "trotro", "bus", "taxi", "fuel", "petrol", "transport", "ride"]],
@@ -157,12 +176,19 @@ function parseCSV(text: string): ParsedRow[] {
 export function FinancePanel({
   data: initial,
   monthlySpending,
+  budgets,
+  budgetSpending,
+  savingsGoals,
 }: {
   data: Summary;
   monthlySpending: MonthData[];
+  budgets: BudgetRow[];
+  budgetSpending: Record<string, number>;
+  savingsGoals: SavingsGoal[];
 }) {
   const router = useRouter();
   const [data, setData] = useState(initial);
+  const [tab, setTab] = useState<Tab>("overview");
   const [dialog, setDialog] = useState<DialogType>(null);
   const [pending, startTransition] = useTransition();
   const [csvRows, setCsvRows] = useState<ParsedRow[]>([]);
@@ -291,6 +317,47 @@ export function FinancePanel({
 
   return (
     <div className="space-y-6">
+      {/* Tab switcher */}
+      <div className="flex gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 w-fit">
+        <button
+          type="button"
+          onClick={() => setTab("overview")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            tab === "overview"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <TrendingUp className="h-4 w-4" />
+          Overview
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("budget")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            tab === "budget"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <PiggyBank className="h-4 w-4" />
+          Budget Planner
+        </button>
+      </div>
+
+      {/* Budget Planner tab */}
+      {tab === "budget" && (
+        <BudgetPlanner
+          budgets={budgets}
+          spending={budgetSpending}
+          savingsGoals={savingsGoals}
+          totalIncome={data.totalIncome}
+        />
+      )}
+
+      {tab === "overview" && <>
       {/* Stats row */}
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
@@ -451,6 +518,8 @@ export function FinancePanel({
           </CardContent>
         </Card>
       </div>
+
+      </> /* end overview tab */}
 
       {/* Add Expense Dialog */}
       <Dialog open={dialog === "expense"} onOpenChange={(v) => !v && setDialog(null)}>

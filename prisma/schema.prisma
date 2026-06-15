@@ -37,6 +37,9 @@ model User {
 
   momoTransactions MoMoTransaction[]
 
+  budgetCategories BudgetCategory[]
+  savingsGoals     SavingsGoal[]
+
   // Onboarding
   onboardingCompleted Boolean @default(false)
   useCase             String? // JSON array: ["student","creator",...]
@@ -479,4 +482,36 @@ model LifeCycleLog {
   createdAt DateTime      @default(now())
 
   @@unique([userId, type, date])
+}
+
+model BudgetCategory {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  monthlyLimit Float
+  month        Int
+  year         Int
+  emoji        String   @default("💰")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, name, month, year])
+  @@index([userId, month, year])
+}
+
+model SavingsGoal {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  targetAmount  Float
+  currentAmount Float     @default(0)
+  targetDate    DateTime?
+  completed     Boolean   @default(false)
+  emoji         String    @default("🎯")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
 }

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { callClaude, getServerApiKey } from "@/lib/ai/claude";
+import { checkAndIncrementUsage } from "@/lib/ai/usage";
 import { getUserContextSummary } from "@/lib/ai/user-context";
 
 type ActionSuggestion = {
@@ -54,12 +57,7 @@ function buildFallbackBrief(context: Awaited<ReturnType<typeof getUserContextSum
   actions.push({
     type: "schedule_block",
     label: "Add 90-minute deep work block (18:00)",
-    payload: {
-      title: "Deep work block",
-      startHour: "18",
-      durationMin: "90",
-      category: "CODING",
-    },
+    payload: { title: "Deep work block", startHour: "18", durationMin: "90", category: "CODING" },
   });
 
   return { brief: lines.map((line) => `- ${line}`).join("\n"), actions, configured: false };
@@ -72,52 +70,43 @@ export async function GET() {
   }
 
   const context = await getUserContextSummary(session.user.id);
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = getServerApiKey();
   if (!apiKey) {
     return NextResponse.json(buildFallbackBrief(context));
   }
 
-  const prompt = [
-    "You are Life OS AI Coach. Return ONLY valid JSON.",
-    "JSON shape: {\"brief\":\"markdown bullets\", \"actions\":[{\"type\":\"create_task|complete_task|schedule_block\",\"label\":\"string\",\"payload\":{\"key\":\"value\"}}]}",
+  const usage = await checkAndIncrementUsage(session.user.id);
+  if (!usage.allowed) {
+    return NextResponse.json({ ...buildFallbackBrief(context), configured: false });
+  }
+
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isPro: true },
+  });
+
+  const system = [
+    "You are Life OS AI Coach. Return ONLY valid JSON with no markdown fences.",
+    'JSON shape: {"brief":"markdown bullets","actions":[{"type":"create_task|complete_task|schedule_block","label":"string","payload":{"key":"value"}}]}',
     "Keep brief to exactly 4 bullets: top focus, biggest risk, quick win, next module.",
-    "Action payload rules:",
-    "create_task => payload: {title, category}",
-    "complete_task => payload: {taskId}",
-    "schedule_block => payload: {title, startHour, durationMin, category}",
-    "Use this user context:",
-    JSON.stringify(context),
+    "create_task payload: {title, category}  |  complete_task payload: {taskId}  |  schedule_block payload: {title, startHour, durationMin, category}",
   ].join("\n");
 
   try {
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 500,
-        temperature: 0.3,
-      }),
+    const reply = await callClaude({
+      apiKey,
+      system,
+      messages: [{ role: "user", content: `User context:\n${JSON.stringify(context)}` }],
+      maxTokens: 600,
+      isPro: userRecord?.isPro ?? false,
     });
 
-    if (!res.ok) {
-      return NextResponse.json(buildFallbackBrief(context));
-    }
-
-    const json = await res.json();
-    const raw = String(json.choices?.[0]?.message?.content ?? "").trim();
-    const parsed = JSON.parse(raw) as { brief?: string; actions?: ActionSuggestion[] };
-
-    const payload: BriefPayload = {
+    const parsed = JSON.parse(reply) as { brief?: string; actions?: ActionSuggestion[] };
+    return NextResponse.json({
       brief: parsed.brief ?? buildFallbackBrief(context).brief,
       actions: Array.isArray(parsed.actions) ? parsed.actions.slice(0, 3) : [],
       configured: true,
-    };
-    return NextResponse.json(payload);
+    } satisfies BriefPayload);
   } catch {
     return NextResponse.json(buildFallbackBrief(context));
   }

@@ -3,6 +3,8 @@ import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { callClaude, getServerApiKey } from "@/lib/ai/claude";
+import { checkAndIncrementUsage } from "@/lib/ai/usage";
 import { buildCourseContext } from "@/lib/study/course-context";
 
 type GenerateAction = "summary" | "flashcards" | "exam-prep";
@@ -26,49 +28,34 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 
+  const apiKey = getServerApiKey();
+  if (!apiKey) {
+    return NextResponse.json({ error: "AI not configured. Add ANTHROPIC_API_KEY.", configured: false }, { status: 503 });
+  }
+
+  const usage = await checkAndIncrementUsage(session.user.id);
+  if (!usage.allowed) {
+    return NextResponse.json({ error: "Daily AI limit reached. Upgrade to Pro for unlimited.", configured: true }, { status: 429 });
+  }
+
   const userRecord = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { openAiKey: true },
+    select: { isPro: true },
   });
-  const apiKey = userRecord?.openAiKey?.trim() || process.env.OPENAI_API_KEY?.trim() || "";
-  if (!apiKey) {
-    return NextResponse.json({
-      error: "OPENAI_API_KEY required for Study Brain generation",
-      configured: false,
-    }, { status: 503 });
-  }
 
-  const prompts: Record<GenerateAction, string> = {
-    summary: `From this course context, write a clear exam-ready summary with headings and key definitions. Return markdown only.`,
-    flashcards: `From this course context, return ONLY a JSON array: [{"front":"question","back":"answer"}]. Create 8-12 high-quality flashcards.`,
-    "exam-prep": `From this course context, list: 1) Top 5 topics to master 2) Common mistakes 3) 10 rapid-fire Q&A pairs. Use markdown.`,
+  const systems: Record<GenerateAction, string> = {
+    summary: "You are a study assistant. Write a clear, exam-ready summary with headings and key definitions. Return markdown only.",
+    flashcards: 'You are a flashcard generator. Return ONLY a JSON array: [{"front":"question","back":"answer"}]. Create 8-12 high-quality flashcards. No markdown fences.',
+    "exam-prep": "You are an exam coach. List: 1) Top 5 topics to master 2) Common mistakes 3) 10 rapid-fire Q&A pairs. Use markdown.",
   };
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      messages: [
-        {
-          role: "user",
-          content: `${prompts[action] ?? prompts.summary}\n\nContext:\n${built.context}`,
-        },
-      ],
-      max_tokens: 1200,
-      temperature: 0.3,
-    }),
+  const raw = await callClaude({
+    apiKey,
+    system: systems[action] ?? systems.summary,
+    messages: [{ role: "user", content: `Course context:\n${built.context}` }],
+    maxTokens: 1400,
+    isPro: userRecord?.isPro ?? false,
   });
-
-  if (!res.ok) {
-    return NextResponse.json({ error: "AI generation failed" }, { status: 502 });
-  }
-
-  const data = await res.json();
-  const raw = String(data.choices?.[0]?.message?.content ?? "").trim();
 
   if (action === "summary") {
     const note = await prisma.studyNote.create({

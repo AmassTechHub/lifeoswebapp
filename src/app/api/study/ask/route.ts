@@ -2,10 +2,13 @@ import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { callClaude, getServerApiKey } from "@/lib/ai/claude";
+import { checkAndIncrementUsage } from "@/lib/ai/usage";
 import { buildCourseContext, type StudySource } from "@/lib/study/course-context";
 
-const SYSTEM = `You are Life OS Study Brain. Answer using ONLY the student's materials.
-Return JSON only: {"answer":"string","citations":[{"sourceId":"id from context","quote":"short quote"}]}
+const SYSTEM = `You are Life OS Study Brain. Answer using ONLY the student's provided course materials.
+Return JSON only (no markdown fences): {"answer":"string","citations":[{"sourceId":"id from context","quote":"short quote"}]}
 Include 1-4 citations from the most relevant sources.`;
 
 export async function POST(request: Request) {
@@ -27,45 +30,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Course not found" }, { status: 404 });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const apiKey = getServerApiKey();
   if (!apiKey) {
-    return NextResponse.json({
-      reply: "Set OPENAI_API_KEY to use Study Brain.",
-      citations: [],
-      configured: false,
-    });
+    return NextResponse.json({ reply: "AI not configured. Add ANTHROPIC_API_KEY.", citations: [], configured: false });
   }
 
-  const sourceIndex = built.sources
-    .map((s) => `[${s.kind}:${s.id}] ${s.title}`)
-    .join("\n");
+  const usage = await checkAndIncrementUsage(session.user.id);
+  if (!usage.allowed) {
+    return NextResponse.json({ reply: "Daily AI limit reached. Upgrade to Pro for unlimited.", citations: [], configured: true });
+  }
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-      messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content: `Sources:\n${sourceIndex}\n\nContext:\n${built.context}\n\nQuestion: ${question}`,
-        },
-      ],
-      max_tokens: 1000,
-      temperature: 0.35,
-    }),
+  const userRecord = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isPro: true },
   });
 
-  if (!res.ok) {
-    return NextResponse.json({ error: "AI request failed" }, { status: 502 });
-  }
+  const sourceIndex = built.sources.map((s) => `[${s.kind}:${s.id}] ${s.title}`).join("\n");
 
-  const data = await res.json();
-  const raw = String(data.choices?.[0]?.message?.content ?? "").trim();
+  const raw = await callClaude({
+    apiKey,
+    system: SYSTEM,
+    messages: [
+      {
+        role: "user",
+        content: `Sources:\n${sourceIndex}\n\nContext:\n${built.context}\n\nQuestion: ${question}`,
+      },
+    ],
+    maxTokens: 1000,
+    isPro: userRecord?.isPro ?? false,
+  }).catch(() => "");
 
   let reply = raw;
   let citations: { sourceId: string; title: string; quote: string; kind: string }[] = [];
@@ -100,10 +93,5 @@ export async function POST(request: Request) {
     }));
   }
 
-  return NextResponse.json({
-    reply,
-    citations,
-    configured: true,
-    courseName: built.course.name,
-  });
+  return NextResponse.json({ reply, citations, configured: true, courseName: built.course.name });
 }

@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "@/lib/session";
 import { AppLayoutClient } from "@/components/layout/AppLayoutClient";
+import { PWARegister } from "@/components/pwa/PWARegister";
 
 export const dynamic = "force-dynamic";
 
@@ -38,5 +39,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     // DB temporarily unreachable — still render the app shell
   }
 
-  return <AppLayoutClient>{children}</AppLayoutClient>;
+  return (
+    <>
+      <AppLayoutClient>{children}</AppLayoutClient>
+      <PWARegister />
+    </>
+  );
 }
