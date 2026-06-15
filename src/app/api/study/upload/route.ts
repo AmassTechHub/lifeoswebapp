@@ -52,8 +52,12 @@ export async function POST(request: Request) {
   try {
     fileUrl = await uploadToStorage(buffer, storagePath, file.type || "application/octet-stream");
   } catch (err) {
-    console.error("Storage upload error:", err);
-    return NextResponse.json({ error: "File storage unavailable" }, { status: 503 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("Storage upload error:", msg);
+    if (msg.includes("env vars not configured") || msg.includes("not configured")) {
+      return NextResponse.json({ error: "File storage not configured. Add NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to Vercel environment variables." }, { status: 503 });
+    }
+    return NextResponse.json({ error: `Upload failed: ${msg}` }, { status: 503 });
   }
 
   const material = await prisma.studyMaterial.create({

@@ -15,11 +15,22 @@ export async function uploadToStorage(
   mimeType: string
 ): Promise<string> {
   const supabase = getSupabaseAdmin();
-  const { error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, buffer, { contentType: mimeType, upsert: false });
 
-  if (error) throw new Error(`Storage upload failed: ${error.message}`);
+  // Try uploading — if bucket missing, create it then retry
+  let uploadError = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(path, buffer, { contentType: mimeType, upsert: false })
+    .then(({ error }) => error);
+
+  if (uploadError && (uploadError.message.includes("not found") || uploadError.message.includes("does not exist") || uploadError.message.includes("Bucket not found"))) {
+    await supabase.storage.createBucket(STORAGE_BUCKET, { public: true, fileSizeLimit: 20 * 1024 * 1024 });
+    const retry = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, buffer, { contentType: mimeType, upsert: false });
+    uploadError = retry.error;
+  }
+
+  if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
   const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(path);
   return data.publicUrl;
