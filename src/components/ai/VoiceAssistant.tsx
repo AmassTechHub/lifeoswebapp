@@ -57,7 +57,8 @@ export function VoiceAssistant() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    const recognition = new SR() as SpeechRecognition;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognition = new SR() as any;
     recognitionRef.current = recognition;
     recognition.lang = "en-US";
     recognition.interimResults = true;
