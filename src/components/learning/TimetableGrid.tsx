@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Clock, Loader2, MapPin, Plus, Trash2, X } from "lucide-react";
+import { Clock, Loader2, MapPin, Plus, X } from "lucide-react";
 
 import { createCourseSchedule, deleteCourseSchedule } from "@/lib/actions/study";
 import { Button } from "@/components/ui/button";
@@ -127,7 +127,6 @@ export function TimetableGrid({ courses }: { courses: Course[] }) {
                 const daySlots = allSlots.filter((s) => {
                   if (s.dayOfWeek !== dayIdx) return false;
                   const start = timeToFraction(s.startTime);
-                  const end = timeToFraction(s.endTime);
                   return start >= hour && start < hour + 1;
                 });
 

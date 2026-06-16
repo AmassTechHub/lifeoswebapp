@@ -139,7 +139,7 @@ export function WorkspaceEditor({
       setEditTitle(selected.title);
       setSaveState("saved");
     }
-  }, [selectedId]);
+  }, [selectedId, selected]);
 
   const doAutoSave = useCallback(
     async (id: string, title: string, content: string) => {

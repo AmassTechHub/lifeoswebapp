@@ -18,7 +18,6 @@ import {
 
 import { createDeadline, updateDeadline, toggleDeadline, deleteDeadline } from "@/lib/actions/deadlines";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -313,7 +312,7 @@ export function DeadlineTracker({
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              dialog === "edit" ? handleUpdate(fd) : handleCreate(fd);
+              if (dialog === "edit") handleUpdate(fd); else handleCreate(fd);
             }}
             className="space-y-4"
           >

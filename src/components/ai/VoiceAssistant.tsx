@@ -40,7 +40,7 @@ export function VoiceAssistant() {
   const [transcript, setTranscript] = useState("");
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<InstanceType<typeof SpeechRecognition> | null>(null);
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -196,7 +196,7 @@ export function VoiceAssistant() {
             </div>
 
             {/* Chat history */}
-            <div className="flex max-h-72 min-h-[120px] flex-col gap-2.5 overflow-y-auto p-4">
+            <div className="flex max-h-72 min-h-30 flex-col gap-2.5 overflow-y-auto p-4">
               {history.length === 0 && !transcript && (
                 <p className="text-center text-sm text-muted-foreground">
                   Say anything — plan your day, ask questions, or talk through what to work on next.

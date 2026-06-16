@@ -3,11 +3,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Brain, Check, Flame, Loader2, Plus, Trash2, X, Zap } from "lucide-react";
+import { Brain, Check, Flame, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { createHabit, deleteHabit, toggleHabitToday } from "@/lib/actions/habits";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,

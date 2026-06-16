@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   BookOpen, Calendar, Check, ChevronRight,
-  FileText, GraduationCap, Loader2, Plus, Sparkles, Trash2, Upload, Users, X, Wand2,
+  FileText, GraduationCap, Loader2, Plus, Sparkles, Upload, Users, X, Wand2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

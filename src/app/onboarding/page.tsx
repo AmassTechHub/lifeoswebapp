@@ -49,7 +49,6 @@ export default function OnboardingPage() {
   const hasSetupStep = isStudent || needsWorkSchedule;
 
   const [step, setStep] = useState(0);
-  const totalSteps = hasSetupStep ? 4 : 3;
 
   // Map linear step index to semantic key
   function stepKey(i: number) {

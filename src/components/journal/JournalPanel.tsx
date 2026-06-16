@@ -42,8 +42,6 @@ export function JournalPanel({
   const [pending, startTransition] = useTransition();
   const [saved, setSaved] = useState(!!initialToday);
 
-  const selectedMood = MOODS.find((m) => m.value === mood) ?? MOODS[2];
-
   async function handleSave() {
     const fd = new FormData();
     fd.append("mood", mood);

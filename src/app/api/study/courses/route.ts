@@ -12,7 +12,6 @@ export async function POST(req: Request) {
   const name = String(fd.get("name") ?? "").trim();
   const code = String(fd.get("code") ?? "").trim() || null;
   const color = String(fd.get("color") ?? "#3b82f6").trim() || "#3b82f6";
-  const credits = parseInt(String(fd.get("credits") ?? "3"), 10) || 3;
 
   if (!name) return NextResponse.json({ error: "Course name is required" }, { status: 400 });
 

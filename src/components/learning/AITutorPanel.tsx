@@ -273,7 +273,7 @@ function ConceptCardsMode({ concepts }: { concepts: ConceptCard[] }) {
 
 type Message = { role: "user" | "assistant"; content: string };
 
-function SocraticMode({ courseId, courseName }: { courseId: string; courseName: string }) {
+function SocraticMode({ courseId }: { courseId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -473,7 +473,7 @@ export function AITutorPanel({ courseId, courseName }: { courseId: string; cours
           </p>
         </div>
       ) : mode === "socratic" ? (
-        <SocraticMode courseId={courseId} courseName={courseName} />
+        <SocraticMode courseId={courseId} />
       ) : mode === "quiz" && quizData ? (
         <QuizMode questions={quizData} courseName={courseName} />
       ) : mode === "concepts" && conceptData ? (

@@ -8,7 +8,6 @@ import {
   Send,
   Sparkles,
   User,
-  Zap,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";

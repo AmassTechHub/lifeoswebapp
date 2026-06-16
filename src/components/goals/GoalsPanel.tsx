@@ -124,7 +124,7 @@ export function GoalsPanel({ goals: initial }: { goals: Goal[] }) {
     });
   }
 
-  async function handleDelete(id: string, title: string) {
+  async function handleDelete(id: string, _title?: string) {
     setGoals((prev) => prev.filter((g) => g.id !== id));
     startTransition(async () => {
       const res = await deleteGoal(id);

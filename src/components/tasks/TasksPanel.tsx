@@ -1,19 +1,10 @@
 "use client";
 
-import { useOptimistic, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import { toast } from "sonner";
-import {
-  Calendar,
-  Check,
-  GripVertical,
-  Loader2,
-  Plus,
-  Tag,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Calendar, GripVertical, Loader2, Plus, Trash2 } from "lucide-react";
 
 import { createTask, deleteTask, updateTaskStatus } from "@/lib/actions/tasks";
 import { Button } from "@/components/ui/button";

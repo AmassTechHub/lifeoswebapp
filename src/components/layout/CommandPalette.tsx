@@ -3,36 +3,9 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
-import {
-  Bot,
-  Calendar,
-  CheckSquare,
-  DollarSign,
-  Flame,
-  Focus,
-  GraduationCap,
-  LayoutDashboard,
-  Loader2,
-  PenLine,
-  FileText,
-  Search,
-  Settings,
-  Target,
-  Users,
-  Video,
-  Zap,
-} from "lucide-react";
+import { Loader2, Search, Settings, Zap } from "lucide-react";
 
 import { navSections, settingsNavItem } from "@/config/navigation";
-
-const ACTIONS = [
-  {
-    group: "Quick Actions",
-    items: [
-      { id: "run-engine", label: "Run Life Engine", icon: Zap, description: "Regenerate today's plan" },
-    ],
-  },
-];
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);

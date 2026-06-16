@@ -11,7 +11,7 @@ import {
 import { createGrade, updateGrade, deleteGrade, savePreviousRecord } from "@/lib/actions/grades";
 import {
   GRADING_SYSTEMS, DEFAULT_SYSTEM, getAcademicClass, getAcademicClassByGPA, scoreToGrade,
-  type GradingSystem, type GradingSystemKey,
+  type GradingSystem,
 } from "@/lib/grades-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -508,7 +508,7 @@ export function CGPATracker({
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               if (derivedGrade) fd.set("grade", derivedGrade);
-              dialog === "edit" ? handleUpdate(fd) : handleCreate(fd);
+              if (dialog === "edit") handleUpdate(fd); else handleCreate(fd);
             }}
             className="space-y-4"
           >
