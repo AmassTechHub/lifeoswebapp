@@ -1,20 +1,27 @@
 import { CGPATracker } from "@/components/grades/CGPATracker";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { getGrades } from "@/lib/actions/grades";
+import { getGrades, getPreviousRecord } from "@/lib/actions/grades";
 import { requireSession } from "@/lib/session";
 
 export default async function GradesPage() {
   const session = await requireSession();
-  const grades = await getGrades(session.user.id);
+  const [grades, prevRecord] = await Promise.all([
+    getGrades(session.user.id),
+    getPreviousRecord(),
+  ]);
 
   return (
     <DashboardShell>
       <PageHeader
-        title="CGPA Tracker"
-        description="Track your grades semester by semester and watch your CGPA grow."
+        title="CWA / GPA Tracker"
+        description="Track your scores per course. CWA and GPA are calculated automatically using the KNUST grading scale."
       />
-      <CGPATracker grades={grades} />
+      <CGPATracker
+        grades={grades}
+        previousCWA={prevRecord.previousCWA}
+        previousCredits={prevRecord.previousCredits}
+      />
     </DashboardShell>
   );
 }

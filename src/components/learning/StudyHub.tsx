@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   BookOpen,
+  Bot,
   CalendarDays,
   FileText,
   GraduationCap,
@@ -12,6 +13,7 @@ import {
   Loader2,
   Play,
   Plus,
+  ScanText,
   Sparkles,
   Trash2,
   Upload,
@@ -20,8 +22,10 @@ import {
 
 import Link from "next/link";
 
+import { AITutorPanel } from "@/components/learning/AITutorPanel";
 import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
+import { SlideReader } from "@/components/learning/SlideReader";
 import { StudyBrainPanel } from "@/components/learning/StudyBrainPanel";
 import { TimetableGrid } from "@/components/learning/TimetableGrid";
 
@@ -77,7 +81,7 @@ type Flashcard = {
   courseId: string | null;
 };
 
-type Tab = "notes" | "summaries" | "materials" | "flashcards" | "timetable";
+type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "timetable";
 
 export function StudyHub({
   courses: initial,
@@ -230,11 +234,13 @@ export function StudyHub({
   }
 
   const TABS: { key: Tab; label: string; Icon: React.ElementType }[] = [
-    { key: "notes", label: "Notes", Icon: FileText },
-    { key: "summaries", label: "Summaries", Icon: BookOpen },
-    { key: "materials", label: "Slides & files", Icon: Upload },
-    { key: "flashcards", label: "Flashcards", Icon: Layers },
-    { key: "timetable", label: "Timetable", Icon: CalendarDays },
+    { key: "notes",     label: "Notes",       Icon: FileText },
+    { key: "summaries", label: "Summaries",   Icon: BookOpen },
+    { key: "read",      label: "Read Slides", Icon: ScanText },
+    { key: "materials", label: "Upload",      Icon: Upload },
+    { key: "flashcards",label: "Flashcards",  Icon: Layers },
+    { key: "ai-tutor",  label: "AI Tutor",    Icon: Bot },
+    { key: "timetable", label: "Timetable",   Icon: CalendarDays },
   ];
 
   return (
@@ -530,6 +536,14 @@ export function StudyHub({
                 </div>
               )}
 
+              {tab === "read" && (
+                <SlideReader materials={selected.materials} />
+              )}
+
+              {tab === "ai-tutor" && (
+                <AITutorPanel courseId={selected.id} courseName={selected.name} />
+              )}
+
               {tab === "flashcards" && (
                 <FlashcardsPanel
                   cards={courseCards}
@@ -558,24 +572,34 @@ export function StudyHub({
                   <div className="space-y-3">
                     {selected.materials.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Upload lecture slides from your professor or your own PDF notes.
+                        Upload lecture slides or PDFs from your professor. Once uploaded, read them inline in the <strong>Read Slides</strong> tab.
                       </p>
                     ) : (
-                      selected.materials.map((m) => (
-                        <a
-                          key={m.id}
-                          href={m.fileUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/80 p-4 transition-colors hover:border-accent/30 hover:bg-accent/5"
+                      <>
+                        <button
+                          onClick={() => setTab("read")}
+                          className="flex w-full items-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-2.5 text-sm font-semibold text-accent transition-colors hover:bg-accent/10"
                         >
-                          <FileText className="h-8 w-8 text-accent" />
-                          <div className="min-w-0">
-                            <p className="font-medium truncate">{m.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{m.fileName}</p>
+                          <ScanText className="h-4 w-4" />
+                          Read all slides in-app →
+                        </button>
+                        {selected.materials.map((m) => (
+                          <div
+                            key={m.id}
+                            className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/80 p-4"
+                          >
+                            <FileText className="h-8 w-8 shrink-0 text-accent" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium truncate">{m.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">{m.fileName}</p>
+                            </div>
+                            <a href={m.fileUrl} target="_blank" rel="noopener noreferrer"
+                              className="shrink-0 text-xs text-muted-foreground hover:text-foreground underline">
+                              Open
+                            </a>
                           </div>
-                        </a>
-                      ))
+                        ))}
+                      </>
                     )}
                   </div>
                 </div>

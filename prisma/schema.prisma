@@ -43,6 +43,10 @@ model User {
   journalEntries   JournalEntry[]
   deadlines        Deadline[]
 
+  // Academic record (for CWA tracking)
+  previousCWA     Float? // CWA before joining app
+  previousCredits Int?   // credit hours already completed
+
   // Onboarding
   onboardingCompleted Boolean @default(false)
   useCase             String? // JSON array: ["student","creator",...]
@@ -521,15 +525,16 @@ model SavingsGoal {
 }
 
 model CourseGrade {
-  id       String   @id @default(cuid())
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name     String
-  code     String?
-  credits  Int      @default(3)
-  grade    String
-  semester String
-  year     Int
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  code      String?
+  credits   Int      @default(3)
+  grade     String   // letter grade: A, B+, B, etc.
+  score     Float?   // percentage score 0-100 (KNUST CWA basis)
+  semester  String
+  year      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
