@@ -8,6 +8,17 @@ import { cn } from "@/lib/utils";
 type State = "idle" | "listening" | "thinking" | "speaking";
 type Msg = { role: "user" | "assistant"; text: string };
 
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((e: { error: string }) => void) | null;
+  start(): void;
+  stop(): void;
+}
+
 // Check for browser support
 function hasSpeechRecognition(): boolean {
   return typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
@@ -57,14 +68,13 @@ export function VoiceAssistant() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
-    const recognition = new SR();
+    const recognition = new SR() as SpeechRecognitionLike;
     recognitionRef.current = recognition;
     recognition.lang = "en-US";
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (e: any) => {
+    recognition.onresult = (e) => {
       const t = Array.from(e.results)
         .map((r) => r[0].transcript)
         .join("");
@@ -78,8 +88,7 @@ export function VoiceAssistant() {
       else setState("idle");
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onerror = (e: any) => {
+    recognition.onerror = (e) => {
       if (e.error === "no-speech") { setState("idle"); return; }
       setError(`Mic error: ${e.error}`);
       setState("idle");
