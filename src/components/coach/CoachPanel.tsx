@@ -63,7 +63,7 @@ export function CoachPanel() {
       setMessages((m) => [...m, { role: "assistant", content: reply }]);
 
       if (!data.configured) {
-        toast.info("Set OPENAI_API_KEY in your .env to unlock the full AI Coach");
+        toast.info("Set ANTHROPIC_API_KEY in your .env to unlock the full AI Coach");
       }
     } catch {
       setMessages((m) => [

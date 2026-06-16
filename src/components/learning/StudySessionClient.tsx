@@ -232,7 +232,7 @@ export function StudySessionClient({
                 </button>
               ) : (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Add an OpenAI key in Settings to enable AI summaries.
+                  Add an Anthropic API key in Settings to enable AI summaries.
                 </p>
               )}
             </div>

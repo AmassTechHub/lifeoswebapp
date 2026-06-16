@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import {
   BookOpen, Calendar, Check, ChevronRight,
-  GraduationCap, Loader2, Plus, Sparkles, Trash2, Upload, Users, X,
+  FileText, GraduationCap, Loader2, Plus, Sparkles, Trash2, Upload, Users, X, Wand2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,11 +29,11 @@ const KNUST_COURSES = [
 
 const COURSE_COLORS = [
   "#3b82f6", "#8b5cf6", "#ec4899", "#ef4444",
-  "#f59e0b", "#a855f7", "#06b6d4", "#22c55e", "#f97316",
+  "#f59e0b", "#a855f7", "#06b6d4", "#22c55e", "#f97316", "#14b8a6",
 ];
 
 type ManualCourse = { name: string; code: string; color: string; credits: number };
-type Step = "method" | "preset-choose" | "preset-confirm" | "manual" | "done";
+type Step = "method" | "preset-choose" | "preset-confirm" | "manual" | "ai-import" | "ai-review" | "done";
 
 interface CourseSetupWizardProps {
   onComplete?: () => void;
@@ -41,6 +41,7 @@ interface CourseSetupWizardProps {
 
 export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
   const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<Step>("method");
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set(KNUST_COURSES.map((c) => c.code)));
@@ -51,6 +52,12 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
     { name: "", code: "", color: COURSE_COLORS[0], credits: 3 },
   ]);
   const [savingManual, setSavingManual] = useState(false);
+
+  // AI import state
+  const [aiText, setAiText] = useState("");
+  const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiExtracted, setAiExtracted] = useState<ManualCourse[]>([]);
 
   function togglePreset(code: string) {
     setSelected((prev) => {
@@ -73,6 +80,43 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
 
   function updateManualRow(i: number, field: keyof ManualCourse, value: string | number) {
     setManualCourses((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
+  }
+
+  function updateExtractedRow(i: number, field: keyof ManualCourse, value: string | number) {
+    setAiExtracted((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
+  }
+
+  function removeExtractedRow(i: number) {
+    setAiExtracted((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  async function runAiExtraction() {
+    if (!aiText.trim() && !aiFile) {
+      toast.error("Paste your course list or upload a document first");
+      return;
+    }
+    setAiLoading(true);
+    try {
+      const fd = new FormData();
+      if (aiFile) {
+        fd.set("file", aiFile);
+      } else {
+        fd.set("text", aiText.trim());
+      }
+      const res = await fetch("/api/study/extract-courses", { method: "POST", body: fd });
+      const data = await res.json() as { courses?: ManualCourse[]; error?: string };
+      if (!res.ok || data.error) throw new Error(data.error ?? "Extraction failed");
+      if (!data.courses?.length) {
+        toast.error("No courses found. Try pasting your course registration text.");
+        return;
+      }
+      setAiExtracted(data.courses);
+      setStep("ai-review");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "AI extraction failed. Try again.");
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   async function applyKnustPreset() {
@@ -103,8 +147,8 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
     }
   }
 
-  async function saveManualCourses() {
-    const valid = manualCourses.filter((c) => c.name.trim());
+  async function saveManualCourses(courses: ManualCourse[] = manualCourses) {
+    const valid = courses.filter((c) => c.name.trim());
     if (valid.length === 0) { toast.error("Add at least one course name"); return; }
     setSavingManual(true);
     try {
@@ -115,10 +159,7 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
         if (c.code.trim()) fd.set("code", c.code.trim());
         fd.set("color", c.color);
         fd.set("credits", String(c.credits));
-        const res = await fetch("/api/study/courses", {
-          method: "POST",
-          body: fd,
-        });
+        const res = await fetch("/api/study/courses", { method: "POST", body: fd });
         if (res.ok) created++;
       }
       setResult({ courses: created, events: 0 });
@@ -153,11 +194,32 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
           <motion.div key="method" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-6 space-y-3">
             <p className="text-sm text-muted-foreground mb-4">How would you like to add your courses?</p>
 
+            {/* AI Smart Import */}
+            <button
+              onClick={() => setStep("ai-import")}
+              className="flex w-full items-start gap-4 rounded-xl border-2 border-accent/30 bg-accent/5 p-4 text-left transition-all hover:border-accent/60 hover:bg-accent/10"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/20 text-accent">
+                <Wand2 className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-foreground">Smart import</p>
+                  <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">AI</span>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Paste your course list or upload your timetable — AI extracts everything automatically
+                </p>
+              </div>
+              <ChevronRight className="ml-auto mt-2 h-4 w-4 shrink-0 text-muted-foreground" />
+            </button>
+
+            {/* KNUST Preset */}
             <button
               onClick={() => setStep("preset-choose")}
-              className="flex w-full items-start gap-4 rounded-xl border border-border/70 bg-accent/5 p-4 text-left transition-all hover:border-accent/40 hover:bg-accent/10"
+              className="flex w-full items-start gap-4 rounded-xl border border-border/70 bg-background/50 p-4 text-left transition-all hover:border-border hover:bg-muted/20"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent/15 text-accent">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground">
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
@@ -169,6 +231,7 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
               <ChevronRight className="ml-auto mt-2 h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
 
+            {/* Manual entry */}
             <button
               onClick={() => setStep("manual")}
               className="flex w-full items-start gap-4 rounded-xl border border-border/70 bg-background/50 p-4 text-left transition-all hover:border-border hover:bg-muted/20"
@@ -177,13 +240,167 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
                 <BookOpen className="h-5 w-5" />
               </div>
               <div>
-                <p className="font-semibold text-foreground">Add my own courses</p>
+                <p className="font-semibold text-foreground">Add manually</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  Any university, any department, any year — enter courses manually
+                  Type each course name, code, and credits yourself
                 </p>
               </div>
               <ChevronRight className="ml-auto mt-2 h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
+          </motion.div>
+        )}
+
+        {/* ── AI Smart Import ── */}
+        {step === "ai-import" && (
+          <motion.div key="ai-import" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-6 space-y-4">
+            <div className="flex items-center gap-2 rounded-xl border border-accent/20 bg-accent/5 px-4 py-3 text-sm text-accent">
+              <Wand2 className="h-4 w-4 shrink-0" />
+              <span>Paste your course schedule or upload a document — AI will extract your courses.</span>
+            </div>
+
+            {/* File upload zone */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">
+                Upload timetable / course list
+              </p>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className={cn(
+                  "flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed py-5 transition-colors",
+                  aiFile
+                    ? "border-accent/40 bg-accent/5"
+                    : "border-border/60 bg-muted/20 hover:border-accent/30 hover:bg-accent/5"
+                )}
+              >
+                {aiFile ? (
+                  <>
+                    <FileText className="h-6 w-6 text-accent" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-foreground">{aiFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{(aiFile.size / 1024).toFixed(0)} KB · click to change</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-6 w-6 text-muted-foreground/50" />
+                    <div className="text-center">
+                      <p className="text-sm font-medium text-muted-foreground">Drop a PDF or screenshot here</p>
+                      <p className="text-xs text-muted-foreground/50">PDF, PNG, JPG, WEBP</p>
+                    </div>
+                  </>
+                )}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,image/png,image/jpeg,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) { setAiFile(f); setAiText(""); }
+                }}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border/50" />
+              <span className="text-xs text-muted-foreground/40">or paste text</span>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+
+            {/* Text paste */}
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">
+                Paste course list
+              </p>
+              <textarea
+                value={aiText}
+                onChange={(e) => { setAiText(e.target.value); if (e.target.value) setAiFile(null); }}
+                placeholder={"CSM 388 Data Structures II - 3 credits\nCSM 354 Computer Graphics - 2 credits\n\nOr paste your course registration page content..."}
+                rows={5}
+                className="w-full rounded-xl border border-border/70 bg-muted/30 px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/30 focus:border-accent focus:ring-1 focus:ring-accent/15 resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-1">
+              <button onClick={() => setStep("method")} className="text-xs text-muted-foreground hover:text-foreground">← Back</button>
+              <Button
+                onClick={runAiExtraction}
+                disabled={aiLoading || (!aiText.trim() && !aiFile)}
+                className="gap-2"
+              >
+                {aiLoading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Extracting...</>
+                ) : (
+                  <><Wand2 className="h-4 w-4" /> Extract courses</>
+                )}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* ── AI Review extracted courses ── */}
+        {step === "ai-review" && (
+          <motion.div key="ai-review" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.2 }} className="p-6">
+            <div className="mb-4 flex items-center gap-2 rounded-xl border border-success/20 bg-success/5 px-3 py-2.5 text-sm text-success">
+              <Sparkles className="h-4 w-4 shrink-0" />
+              <span>AI found {aiExtracted.length} courses. Review and edit before saving.</span>
+            </div>
+            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+              {aiExtracted.map((c, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-2.5">
+                  <div className="relative shrink-0">
+                    <div className="h-6 w-6 rounded-full cursor-pointer border-2 border-white/20 shadow-sm" style={{ backgroundColor: c.color }} />
+                    <input
+                      type="color"
+                      value={c.color}
+                      onChange={(e) => updateExtractedRow(i, "color", e.target.value)}
+                      className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    />
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1 sm:flex-row">
+                    <Input
+                      value={c.name}
+                      onChange={(e) => updateExtractedRow(i, "name", e.target.value)}
+                      placeholder="Course name"
+                      className="h-7 flex-1 text-xs"
+                    />
+                    <Input
+                      value={c.code}
+                      onChange={(e) => updateExtractedRow(i, "code", e.target.value)}
+                      placeholder="Code"
+                      className="h-7 w-24 shrink-0 text-xs"
+                    />
+                    <div className="flex items-center gap-1">
+                      <Input
+                        type="number" min="1" max="6"
+                        value={c.credits}
+                        onChange={(e) => updateExtractedRow(i, "credits", parseInt(e.target.value) || 3)}
+                        className="h-7 w-14 shrink-0 text-xs"
+                      />
+                      <Label className="shrink-0 text-[10px] text-muted-foreground">cr</Label>
+                    </div>
+                  </div>
+                  <button onClick={() => removeExtractedRow(i)} className="shrink-0 rounded p-1 text-muted-foreground/30 hover:text-danger">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setAiExtracted((prev) => [...prev, { name: "", code: "", color: COURSE_COLORS[prev.length % COURSE_COLORS.length], credits: 3 }])}
+              className="mt-2 flex items-center gap-1.5 text-xs text-accent hover:underline"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add another
+            </button>
+            <div className="mt-5 flex items-center justify-between">
+              <button onClick={() => setStep("ai-import")} className="text-xs text-muted-foreground hover:text-foreground">← Re-import</button>
+              <Button onClick={() => saveManualCourses(aiExtracted)} disabled={savingManual || aiExtracted.filter((c) => c.name.trim()).length === 0} className="gap-2">
+                {savingManual ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                Save {aiExtracted.filter((c) => c.name.trim()).length} courses
+              </Button>
+            </div>
           </motion.div>
         )}
 
@@ -280,7 +497,6 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
             <div className="space-y-3">
               {manualCourses.map((c, i) => (
                 <div key={i} className="flex items-center gap-2 rounded-xl border border-border/60 bg-muted/20 p-3">
-                  {/* Color picker */}
                   <div className="relative shrink-0">
                     <div className="h-7 w-7 rounded-full cursor-pointer border-2 border-white/20 shadow-sm" style={{ backgroundColor: c.color }} />
                     <input
@@ -331,7 +547,7 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
             </div>
             <div className="mt-5 flex gap-2">
               <button onClick={() => setStep("method")} className="text-xs text-muted-foreground hover:text-foreground">← Back</button>
-              <Button onClick={saveManualCourses} disabled={savingManual} className="ml-auto gap-2">
+              <Button onClick={() => saveManualCourses()} disabled={savingManual} className="ml-auto gap-2">
                 {savingManual ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
                 Save courses
               </Button>
@@ -362,7 +578,7 @@ export function CourseSetupWizard({ onComplete }: CourseSetupWizardProps) {
             </div>
             <div className="mt-4 flex items-center gap-2 rounded-lg bg-accent/5 px-3 py-2 text-xs text-accent">
               <Upload className="h-3.5 w-3.5" />
-              Upload lecture slides per course → AI can summarise and generate flashcards
+              Upload lecture slides per course → AI can teach, quiz, and predict exam topics
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
               Your courses are private. Only your account can see them.

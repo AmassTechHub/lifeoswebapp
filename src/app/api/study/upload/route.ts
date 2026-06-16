@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -13,6 +14,23 @@ const ALLOWED = [
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
 ];
+
+export async function DELETE(request: Request) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+
+  const material = await prisma.studyMaterial.findFirst({
+    where: { id, course: { userId: session.user.id } },
+  });
+  if (!material) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.studyMaterial.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
 
 export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });

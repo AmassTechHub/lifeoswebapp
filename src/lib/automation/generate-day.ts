@@ -100,6 +100,24 @@ export async function generateDayPlan(userId: string, baseDate = new Date()) {
     }),
   ]);
 
+  // If a snapshot AND SYSTEM events already exist (concurrent request already ran), skip
+  const [existingSnap, existingSystem] = await Promise.all([
+    prisma.daySnapshot.findUnique({ where: { userId_date: { userId, date: dayStart } } }),
+    prisma.calendarEvent.count({ where: { userId, source: "SYSTEM", startAt: { gte: dayStart, lt: dayEnd } } }),
+  ]);
+  if (existingSnap && existingSystem > 0) {
+    const events = await prisma.calendarEvent.findMany({
+      where: { userId, startAt: { gte: dayStart, lt: dayEnd } },
+      orderBy: { startAt: "asc" },
+    });
+    return {
+      events,
+      focusItems: JSON.parse(existingSnap.focusJson ?? "[]"),
+      score: existingSnap.score,
+      breakdown: JSON.parse(existingSnap.breakdown ?? "{}"),
+    };
+  }
+
   await prisma.calendarEvent.deleteMany({
     where: {
       userId,
@@ -278,9 +296,18 @@ export async function getTodaySchedule(userId: string) {
   const dayStart = startOfDay(now);
   const dayEnd = endOfDay(now);
 
-  return prisma.calendarEvent.findMany({
+  const events = await prisma.calendarEvent.findMany({
     where: { userId, startAt: { gte: dayStart, lt: dayEnd } },
     orderBy: { startAt: "asc" },
+  });
+
+  // Deduplicate by title+startAt in case of stale duplicates in DB
+  const seen = new Set<string>();
+  return events.filter((e) => {
+    const key = `${e.title}|${e.startAt.toISOString()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }
 
