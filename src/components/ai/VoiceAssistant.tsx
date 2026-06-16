@@ -63,7 +63,8 @@ export function VoiceAssistant() {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
-    recognition.onresult = (e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (e: any) => {
       const t = Array.from(e.results)
         .map((r) => r[0].transcript)
         .join("");
@@ -77,7 +78,8 @@ export function VoiceAssistant() {
       else setState("idle");
     };
 
-    recognition.onerror = (e) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onerror = (e: any) => {
       if (e.error === "no-speech") { setState("idle"); return; }
       setError(`Mic error: ${e.error}`);
       setState("idle");
