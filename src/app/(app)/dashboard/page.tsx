@@ -5,7 +5,7 @@ import { DailyScore } from "@/components/dashboard/DailyScore";
 import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
 import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
 import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
-import { SmartActions, TimetableUpload } from "@/components/dashboard/SmartSystem";
+import { SmartActions } from "@/components/dashboard/SmartSystem";
 import { StudySnapshot } from "@/components/dashboard/StudySnapshot";
 import { TodaysFocus } from "@/components/dashboard/TodaysFocus";
 import { TodaysSchedule } from "@/components/dashboard/TodaysSchedule";
@@ -61,8 +61,8 @@ export default async function DashboardPage() {
         pulseStatus={(engineRun?.pulseStatus ?? pulse.status) as "ok" | "warning" | "critical"}
       />
 
-      {/* Primary: focus + daily score */}
-      <StaggeredGrid className="mb-5 grid gap-5 lg:grid-cols-3">
+      {/* Row 1: focus (2/3) + daily score (1/3) */}
+      <StaggeredGrid className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <StaggerItem className="lg:col-span-2">
           <TodaysFocus items={data.focusItems} />
         </StaggerItem>
@@ -75,8 +75,8 @@ export default async function DashboardPage() {
         </StaggerItem>
       </StaggeredGrid>
 
-      {/* Secondary: study + finance + deadlines */}
-      <StaggeredGrid className="mb-5 grid gap-4 md:grid-cols-3">
+      {/* Row 2: study + finance + deadlines */}
+      <StaggeredGrid className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StaggerItem>
           <StudySnapshot courses={data.studyCourses} recentNotes={data.recentNotes} />
         </StaggerItem>
@@ -92,17 +92,14 @@ export default async function DashboardPage() {
         </StaggerItem>
       </StaggeredGrid>
 
-      {/* Tertiary: schedule + tools */}
-      <StaggeredGrid className="mb-5 grid gap-4 lg:grid-cols-3">
+      {/* Row 3: schedule (2/3) + right column (1/3) */}
+      <StaggeredGrid className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <StaggerItem className="lg:col-span-2">
           <TodaysSchedule schedule={data.schedule} />
         </StaggerItem>
         <div className="space-y-4">
           <StaggerItem>
             <AIUsageCard />
-          </StaggerItem>
-          <StaggerItem>
-            <TimetableUpload />
           </StaggerItem>
           <StaggerItem>
             <SmartActions />
@@ -112,8 +109,7 @@ export default async function DashboardPage() {
 
       <ProgressOverview progress={data.progress} />
 
-      {/* AI Weekly Planner */}
-      <div className="mt-5">
+      <div className="mt-4">
         <WeeklyAIPlanner />
       </div>
     </DashboardShell>

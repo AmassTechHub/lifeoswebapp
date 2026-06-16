@@ -47,7 +47,7 @@ export const navSections: NavSection[] = [
     label: "Study & Create",
     items: [
       { title: "Learning", href: "/learning", icon: GraduationCap },
-      { title: "CGPA Tracker", href: "/grades", icon: Award },
+      { title: "Grade Tracker", href: "/grades", icon: Award },
       { title: "Deadlines", href: "/deadlines", icon: ClipboardList },
       { title: "Study Analytics", href: "/analytics", icon: BarChart2 },
       { title: "Content Hub", href: "/content", icon: Video },

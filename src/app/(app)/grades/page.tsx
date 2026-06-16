@@ -14,8 +14,8 @@ export default async function GradesPage() {
   return (
     <DashboardShell>
       <PageHeader
-        title="CWA / GPA Tracker"
-        description="Track your scores per course. CWA and GPA are calculated automatically using the KNUST grading scale."
+        title="Grade Tracker"
+        description="Track your scores per course. Weighted average and GPA are calculated automatically."
       />
       <CGPATracker
         grades={grades}

@@ -4,14 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  Award, BookOpen, Brain, ChevronDown, ChevronUp,
-  Loader2, Pencil, Plus, Target, Trash2, X,
+  Award, BookOpen, Brain, ChevronDown, ChevronRight, ChevronUp,
+  Loader2, Pencil, Plus, Settings2, Target, Trash2, X,
 } from "lucide-react";
 
 import { createGrade, updateGrade, deleteGrade, savePreviousRecord } from "@/lib/actions/grades";
 import {
-  KNUST_GRADES, ACADEMIC_CLASSES, GRADE_MIDPOINT,
-  getAcademicClass, getAcademicClassByGPA, scoreToGrade,
+  GRADING_SYSTEMS, DEFAULT_SYSTEM, getAcademicClass, getAcademicClassByGPA, scoreToGrade,
+  type GradingSystem, type GradingSystemKey,
 } from "@/lib/grades-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,30 +25,31 @@ type Grade = {
   grade: string; score?: number | null; semester: string; year: number;
 };
 
-type ViewMode = "cwa" | "gpa";
+type ViewMode = "wa" | "gpa";
 
-const GRADE_OPTIONS = Object.keys(KNUST_GRADES);
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i);
-const SEMESTERS = ["Semester 1", "Semester 2", "Semester 3"];
+const SEMESTERS = ["Semester 1", "Semester 2", "Semester 3", "Term 1", "Term 2", "Term 3", "Fall", "Spring", "Summer"];
 
 // ── Computation helpers ──────────────────────────────────────────────────────
 
-function computeCWA(grades: Grade[], prevCWA: number | null, prevCredits: number | null): number {
-  const appSum = grades.reduce((s, g) => s + (g.score ?? GRADE_MIDPOINT[g.grade] ?? 0) * g.credits, 0);
+function computeWA(grades: Grade[], system: GradingSystem, prevWA: number | null, prevCredits: number | null): number {
+  const midpoints = system.midpoints;
+  const appSum = grades.reduce((s, g) => s + (g.score ?? midpoints[g.grade] ?? 0) * g.credits, 0);
   const appCreds = grades.reduce((s, g) => s + g.credits, 0);
-  const prevSum = (prevCWA ?? 0) * (prevCredits ?? 0);
+  const prevSum = (prevWA ?? 0) * (prevCredits ?? 0);
   const prevCreds = prevCredits ?? 0;
   const totalCreds = appCreds + prevCreds;
   return totalCreds > 0 ? (appSum + prevSum) / totalCreds : 0;
 }
 
-function computeGPA(grades: Grade[], prevCWA: number | null, prevCredits: number | null): number {
-  const appSum = grades.reduce((s, g) => s + (KNUST_GRADES[g.grade] ?? 0) * g.credits, 0);
+function computeGPA(grades: Grade[], system: GradingSystem, prevWA: number | null, prevCredits: number | null): number {
+  const gradePoints = system.grades;
+  const appSum = grades.reduce((s, g) => s + (gradePoints[g.grade] ?? 0) * g.credits, 0);
   const appCreds = grades.reduce((s, g) => s + g.credits, 0);
   let prevGPASum = 0;
-  if (prevCWA != null && prevCredits != null && prevCredits > 0) {
-    prevGPASum = (KNUST_GRADES[scoreToGrade(prevCWA)] ?? 0) * prevCredits;
+  if (prevWA != null && prevCredits != null && prevCredits > 0) {
+    prevGPASum = (gradePoints[scoreToGrade(prevWA, system)] ?? 0) * prevCredits;
   }
   const totalCreds = appCreds + (prevCredits ?? 0);
   return totalCreds > 0 ? (appSum + prevGPASum) / totalCreds : 0;
@@ -58,9 +59,9 @@ function totalCreditsDone(grades: Grade[], prevCredits: number | null): number {
   return grades.reduce((s, g) => s + g.credits, 0) + (prevCredits ?? 0);
 }
 
-function requiredAvg(targetCWA: number, weightedSum: number, credsDone: number, remaining: number): number {
+function requiredAvg(target: number, weightedSum: number, credsDone: number, remaining: number): number {
   if (remaining <= 0) return 0;
-  return (targetCWA * (credsDone + remaining) - weightedSum) / remaining;
+  return (target * (credsDone + remaining) - weightedSum) / remaining;
 }
 
 function groupBySemester(grades: Grade[]): Record<string, Grade[]> {
@@ -77,7 +78,7 @@ function groupBySemester(grades: Grade[]): Record<string, Grade[]> {
 
 export function CGPATracker({
   grades: initial,
-  previousCWA: initPrevCWA,
+  previousCWA: initPrevWA,
   previousCredits: initPrevCredits,
 }: {
   grades: Grade[];
@@ -86,11 +87,13 @@ export function CGPATracker({
 }) {
   const router = useRouter();
   const [grades, setGrades] = useState(initial);
-  const [viewMode, setViewMode] = useState<ViewMode>("cwa");
+  const [viewMode, setViewMode] = useState<ViewMode>("wa");
+  const [system, setSystem] = useState<GradingSystem>(DEFAULT_SYSTEM);
+  const [showSystemPicker, setShowSystemPicker] = useState(false);
   const [dialog, setDialog] = useState<"add" | "edit" | "prev" | null>(null);
   const [editing, setEditing] = useState<Grade | null>(null);
   const [pending, startTransition] = useTransition();
-  const [prevCWA, setPrevCWA] = useState(initPrevCWA);
+  const [prevWA, setPrevWA] = useState(initPrevWA);
   const [prevCredits, setPrevCredits] = useState(initPrevCredits);
   const [remainingCredits, setRemainingCredits] = useState(0);
   const [showTargets, setShowTargets] = useState(true);
@@ -99,15 +102,17 @@ export function CGPATracker({
   const [scoreInput, setScoreInput] = useState("");
   const [derivedGrade, setDerivedGrade] = useState("");
 
-  const cwa = computeCWA(grades, prevCWA, prevCredits);
-  const gpa = computeGPA(grades, prevCWA, prevCredits);
+  const wa = computeWA(grades, system, prevWA, prevCredits);
+  const gpa = computeGPA(grades, system, prevWA, prevCredits);
   const credsDone = totalCreditsDone(grades, prevCredits);
   const grouped = groupBySemester(grades);
-  const activeClass = viewMode === "cwa" ? getAcademicClass(cwa) : getAcademicClassByGPA(gpa);
+  const activeClass = viewMode === "wa" ? getAcademicClass(wa, system) : getAcademicClassByGPA(gpa, system);
   const displayValue = credsDone > 0
-    ? (viewMode === "cwa" ? cwa.toFixed(1) + "%" : gpa.toFixed(2))
+    ? (viewMode === "wa" ? wa.toFixed(1) + "%" : gpa.toFixed(2))
     : "—";
-  const barPct = Math.min((viewMode === "cwa" ? cwa / 100 : gpa / 4) * 100, 100);
+  const barPct = Math.min((viewMode === "wa" ? wa / 100 : gpa / system.maxGPA) * 100, 100);
+
+  const gradeOptions = Object.keys(system.grades);
 
   function openEdit(g: Grade) {
     setEditing(g);
@@ -120,7 +125,7 @@ export function CGPATracker({
   function handleScoreChange(val: string) {
     setScoreInput(val);
     const n = parseFloat(val);
-    setDerivedGrade(!isNaN(n) && n >= 0 && n <= 100 ? scoreToGrade(n) : "");
+    setDerivedGrade(!isNaN(n) && n >= 0 && n <= 100 ? scoreToGrade(n, system) : "");
   }
 
   async function handleCreate(fd: FormData) {
@@ -154,7 +159,7 @@ export function CGPATracker({
     startTransition(async () => {
       const res = await savePreviousRecord(fd);
       if (res?.error) { toast.error(res.error); return; }
-      setPrevCWA(parseFloat(String(fd.get("previousCWA"))));
+      setPrevWA(parseFloat(String(fd.get("previousCWA"))));
       setPrevCredits(parseInt(String(fd.get("previousCredits")), 10));
       toast.success("Previous record saved"); closeDialog();
     });
@@ -168,7 +173,7 @@ export function CGPATracker({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          currentCWA: cwa,
+          currentCWA: wa,
           creditsCompleted: credsDone,
           grades: grades.map((g) => ({ name: g.name, code: g.code, score: g.score, grade: g.grade, credits: g.credits })),
         }),
@@ -186,23 +191,53 @@ export function CGPATracker({
     <div className="space-y-6">
       {/* ── Hero ── */}
       <div className="rounded-2xl border border-border/70 bg-card/80 p-6">
-        {/* CWA / GPA toggle + Add */}
-        <div className="mb-5 flex items-center justify-between">
+        {/* Top bar: WA/GPA toggle + grading system picker + Add */}
+        <div className="mb-5 flex flex-wrap items-center gap-3">
           <div className="flex gap-1 rounded-lg border border-border/70 bg-muted/30 p-1">
-            {(["cwa", "gpa"] as const).map((m) => (
+            {(["wa", "gpa"] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => setViewMode(m)}
                 className={cn(
-                  "rounded-md px-5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors",
+                  "rounded-md px-4 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors",
                   viewMode === m ? "bg-accent text-accent-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                {m.toUpperCase()}
+                {m === "wa" ? "Avg %" : `GPA / ${system.maxGPA}`}
               </button>
             ))}
           </div>
-          <Button size="sm" className="gap-2" onClick={() => { setScoreInput(""); setDerivedGrade(""); setDialog("add"); }}>
+
+          {/* Grading system picker */}
+          <div className="relative">
+            <button
+              onClick={() => setShowSystemPicker((v) => !v)}
+              className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
+              {system.label}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showSystemPicker && (
+              <div className="absolute left-0 top-full z-20 mt-1 w-64 overflow-hidden rounded-xl border border-border/70 bg-popover shadow-xl">
+                {Object.values(GRADING_SYSTEMS).map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() => { setSystem(s); setShowSystemPicker(false); }}
+                    className={cn(
+                      "flex w-full flex-col items-start px-4 py-3 text-left text-sm transition-colors hover:bg-muted/50",
+                      s.key === system.key && "bg-accent/10"
+                    )}
+                  >
+                    <span className="font-semibold text-foreground">{s.label}</span>
+                    <span className="text-xs text-muted-foreground">{s.description}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Button size="sm" className="ml-auto gap-2" onClick={() => { setScoreInput(""); setDerivedGrade(""); setDialog("add"); }}>
             <Plus className="h-4 w-4" /> Add course
           </Button>
         </div>
@@ -210,12 +245,12 @@ export function CGPATracker({
         {/* Main metric */}
         <div>
           <p className="text-sm font-medium text-muted-foreground">
-            {viewMode === "cwa" ? "Cumulative Weighted Average" : "Grade Point Average"}
+            {viewMode === "wa" ? "Weighted Average" : `Grade Point Average (/${system.maxGPA})`}
           </p>
           <div className="mt-1 flex items-end gap-3">
             <span className="text-5xl font-bold tabular-nums tracking-tight">{displayValue}</span>
             {credsDone > 0 && (
-              <span className="mb-1.5 text-lg text-muted-foreground">/ {viewMode === "cwa" ? "100%" : "4.00"}</span>
+              <span className="mb-1.5 text-lg text-muted-foreground">/ {viewMode === "wa" ? "100%" : system.maxGPA.toFixed(2)}</span>
             )}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -227,17 +262,17 @@ export function CGPATracker({
             )}
             <span className="text-xs text-muted-foreground">
               {grades.length} course{grades.length !== 1 ? "s" : ""} · {credsDone} credit hrs
-              {credsDone > 0 && viewMode === "cwa" && gpa > 0 && (
+              {credsDone > 0 && viewMode === "wa" && gpa > 0 && (
                 <span className="ml-1.5 opacity-60">· GPA {gpa.toFixed(2)}</span>
               )}
-              {credsDone > 0 && viewMode === "gpa" && cwa > 0 && (
-                <span className="ml-1.5 opacity-60">· CWA {cwa.toFixed(1)}%</span>
+              {credsDone > 0 && viewMode === "gpa" && wa > 0 && (
+                <span className="ml-1.5 opacity-60">· Avg {wa.toFixed(1)}%</span>
               )}
             </span>
           </div>
         </div>
 
-        {/* Progress bar */}
+        {/* Progress bar with classification ticks */}
         {credsDone > 0 && (
           <div className="mt-5">
             <div className="h-3 w-full overflow-hidden rounded-full bg-muted/50">
@@ -251,14 +286,13 @@ export function CGPATracker({
                 style={{ width: `${barPct}%` }}
               />
             </div>
-            {/* threshold ticks */}
             <div className="relative mt-1 h-3">
-              {ACADEMIC_CLASSES.filter((c) => c.cwaMin > 0 && c.cwaMin < 100).map((c) => {
-                const pct = viewMode === "cwa" ? c.cwaMin : (c.gpaMin / 4) * 100;
+              {system.classifications.filter((c) => c.cwaMin > 0 && c.cwaMin < 100).map((c) => {
+                const pct = viewMode === "wa" ? c.cwaMin : (c.gpaMin / system.maxGPA) * 100;
                 return (
-                  <div key={c.label} className="absolute -translate-x-1/2" style={{ left: `${pct}%` }} title={`${c.label}: ${viewMode === "cwa" ? c.cwaMin + "%" : c.gpaMin}`}>
+                  <div key={c.label} className="absolute -translate-x-1/2" style={{ left: `${pct}%` }} title={`${c.label}`}>
                     <div className="h-1.5 w-px bg-border/60" />
-                    <span className="text-[9px] text-muted-foreground/50">{viewMode === "cwa" ? c.cwaMin : c.gpaMin}</span>
+                    <span className="text-[9px] text-muted-foreground/50">{viewMode === "wa" ? c.cwaMin : c.gpaMin}</span>
                   </div>
                 );
               })}
@@ -270,9 +304,9 @@ export function CGPATracker({
           onClick={() => setDialog("prev")}
           className="mt-4 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
         >
-          {prevCWA != null
-            ? `Previous record: CWA ${prevCWA}% · ${prevCredits} credits — click to update`
-            : "Import previous CWA from transcript"}
+          {prevWA != null
+            ? `Previous record: ${prevWA.toFixed(1)}% avg · ${prevCredits} credits — click to update`
+            : "Import previous results from transcript"}
         </button>
       </div>
 
@@ -283,10 +317,10 @@ export function CGPATracker({
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 text-sm">
                 <Target className="h-4 w-4 text-accent" />
-                What do you need?
+                What do you need to achieve?
               </CardTitle>
               <button onClick={() => setShowTargets((v) => !v)} className="text-muted-foreground hover:text-foreground">
-                {showTargets ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                {showTargets ? <ChevronUp className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </button>
             </div>
           </CardHeader>
@@ -303,10 +337,10 @@ export function CGPATracker({
                 />
               </div>
               <div className="space-y-2.5">
-                {ACADEMIC_CLASSES.filter((c) => c.cwaMin > 0).map((cls) => {
-                  const weightedSum = cwa * credsDone;
+                {system.classifications.filter((c) => c.cwaMin > 0).map((cls) => {
+                  const weightedSum = wa * credsDone;
                   const needed = requiredAvg(cls.cwaMin, weightedSum, credsDone, remainingCredits);
-                  const achieved = cwa >= cls.cwaMin;
+                  const achieved = wa >= cls.cwaMin;
                   const impossible = needed > 100;
                   return (
                     <div key={cls.label} className="flex items-center justify-between gap-3">
@@ -361,31 +395,29 @@ export function CGPATracker({
         </Card>
       )}
 
-      {/* ── KNUST Grade Scale Reference ── */}
+      {/* ── Grade Scale Reference ── */}
       <Card className="border-border/70 bg-card/80">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm">KNUST Grading Scale</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm">Grading Scale — {system.label}</CardTitle>
+            <span className="text-xs text-muted-foreground">Change above ↑</span>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {[
-              { range: "80–100%", grade: "A",  pts: "4.0" },
-              { range: "75–79%",  grade: "B+", pts: "3.5" },
-              { range: "70–74%",  grade: "B",  pts: "3.0" },
-              { range: "65–69%",  grade: "C+", pts: "2.5" },
-              { range: "60–64%",  grade: "C",  pts: "2.0" },
-              { range: "55–59%",  grade: "D+", pts: "1.5" },
-              { range: "50–54%",  grade: "D",  pts: "1.0" },
-              { range: "0–49%",   grade: "F",  pts: "0.0" },
-            ].map(({ range, grade, pts }) => (
-              <div key={grade} className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-2.5 py-2">
-                <div className="min-w-0">
-                  <p className="text-[10px] text-muted-foreground">{range}</p>
-                  <p className="text-sm font-bold">{grade}</p>
+            {system.scoreRanges.map(({ min, grade }, i) => {
+              const max = i === 0 ? 100 : system.scoreRanges[i - 1].min - 1;
+              const pts = system.grades[grade]?.toFixed(1) ?? "—";
+              return (
+                <div key={grade} className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-2.5 py-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] text-muted-foreground">{min}–{max}%</p>
+                    <p className="text-sm font-bold">{grade}</p>
+                  </div>
+                  <span className="ml-auto text-xs text-muted-foreground">{pts}</span>
                 </div>
-                <span className="ml-auto text-xs text-muted-foreground">{pts}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </CardContent>
       </Card>
@@ -395,7 +427,7 @@ export function CGPATracker({
         <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
           <BookOpen className="mx-auto h-10 w-10 text-muted-foreground/30" />
           <p className="mt-3 text-sm font-medium text-muted-foreground">No courses yet</p>
-          <p className="mt-1 text-xs text-muted-foreground/60">Enter your score (%) per course — grade and CWA are calculated automatically.</p>
+          <p className="mt-1 text-xs text-muted-foreground/60">Enter your score (%) per course — letter grade and weighted average are calculated automatically.</p>
           <Button size="sm" className="mt-4 gap-2" onClick={() => setDialog("add")}>
             <Plus className="h-4 w-4" /> Add first course
           </Button>
@@ -406,9 +438,9 @@ export function CGPATracker({
             .sort(([a], [b]) => b.localeCompare(a))
             .map(([semKey, semGrades]) => {
               const semCredits = semGrades.reduce((s, g) => s + g.credits, 0);
-              const semCWA = semGrades.reduce((s, g) => s + (g.score ?? GRADE_MIDPOINT[g.grade] ?? 0) * g.credits, 0) / Math.max(semCredits, 1);
-              const semGPA = semGrades.reduce((s, g) => s + (KNUST_GRADES[g.grade] ?? 0) * g.credits, 0) / Math.max(semCredits, 1);
-              const semClass = getAcademicClass(semCWA);
+              const semWA = semGrades.reduce((s, g) => s + (g.score ?? system.midpoints[g.grade] ?? 0) * g.credits, 0) / Math.max(semCredits, 1);
+              const semGPA = semGrades.reduce((s, g) => s + (system.grades[g.grade] ?? 0) * g.credits, 0) / Math.max(semCredits, 1);
+              const semClass = getAcademicClass(semWA, system);
 
               return (
                 <Card key={semKey} className="border-border/70 bg-card/80">
@@ -418,15 +450,15 @@ export function CGPATracker({
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">{semCredits} credits</span>
                         <span className={cn("rounded-full px-2 py-0.5 text-xs font-bold", semClass.bgColor, semClass.color)}>
-                          {viewMode === "cwa" ? `CWA ${semCWA.toFixed(1)}%` : `GPA ${semGPA.toFixed(2)}`}
+                          {viewMode === "wa" ? `${semWA.toFixed(1)}%` : `GPA ${semGPA.toFixed(2)}`}
                         </span>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-2 pt-0">
                     {semGrades.map((g) => {
-                      const effectiveScore = g.score ?? GRADE_MIDPOINT[g.grade] ?? 0;
-                      const cls = getAcademicClass(effectiveScore);
+                      const effectiveScore = g.score ?? system.midpoints[g.grade] ?? 0;
+                      const cls = getAcademicClass(effectiveScore, system);
                       return (
                         <div key={g.id} className="group flex items-center justify-between rounded-xl border border-border/50 px-3 py-2.5 transition-colors hover:bg-muted/30">
                           <div className="min-w-0">
@@ -436,14 +468,14 @@ export function CGPATracker({
                             </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-2">
-                            {viewMode === "cwa" ? (
+                            {viewMode === "wa" ? (
                               <span className={cn("text-lg font-bold", cls.color)}>
                                 {g.score != null ? `${g.score}%` : g.grade}
                               </span>
                             ) : (
                               <>
                                 <span className={cn("text-lg font-bold", cls.color)}>{g.grade}</span>
-                                <span className="text-xs text-muted-foreground">({KNUST_GRADES[g.grade]?.toFixed(1)})</span>
+                                <span className="text-xs text-muted-foreground">({system.grades[g.grade]?.toFixed(1)})</span>
                               </>
                             )}
                             <div className="flex opacity-0 transition-opacity group-hover:opacity-100">
@@ -487,14 +519,13 @@ export function CGPATracker({
               </div>
               <div className="space-y-1.5">
                 <Label>Code (optional)</Label>
-                <Input name="code" defaultValue={editing?.code ?? ""} placeholder="CSM 388" />
+                <Input name="code" defaultValue={editing?.code ?? ""} placeholder="CS 301" />
               </div>
             </div>
 
-            {/* Score → auto-grade */}
             <div className="space-y-1.5">
               <Label>
-                Score <span className="font-normal text-muted-foreground">(% — recommended for CWA)</span>
+                Score <span className="font-normal text-muted-foreground">(% — auto-derives letter grade)</span>
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -515,14 +546,14 @@ export function CGPATracker({
 
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
-                <Label>Grade <span className="font-normal text-muted-foreground text-[10px]">(or pick manually)</span></Label>
+                <Label>Grade</Label>
                 <select
                   name="grade"
-                  value={derivedGrade || (editing?.grade ?? "B")}
+                  value={derivedGrade || (editing?.grade ?? gradeOptions[2] ?? "B")}
                   onChange={(e) => setDerivedGrade(e.target.value)}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none"
                 >
-                  {GRADE_OPTIONS.map((g) => <option key={g} value={g}>{g} ({KNUST_GRADES[g].toFixed(1)})</option>)}
+                  {gradeOptions.map((g) => <option key={g} value={g}>{g} ({system.grades[g].toFixed(1)})</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
@@ -538,7 +569,7 @@ export function CGPATracker({
             </div>
 
             <div className="space-y-1.5">
-              <Label>Semester</Label>
+              <Label>Semester / Term</Label>
               <select name="semester" defaultValue={editing?.semester ?? "Semester 1"} className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none">
                 {SEMESTERS.map((s) => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -559,17 +590,17 @@ export function CGPATracker({
       <Dialog open={dialog === "prev"} onOpenChange={(v) => !v && closeDialog()}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Import previous record</DialogTitle>
+            <DialogTitle>Import previous results</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Enter your CWA and total credit hours completed <strong>before</strong> using this app. Your overall CWA will be calculated correctly across all semesters.
+            Enter your weighted average and total credit hours completed <strong>before</strong> using this app. Your overall average will be calculated correctly across all semesters.
           </p>
           <form onSubmit={(e) => { e.preventDefault(); handleSavePrev(new FormData(e.currentTarget)); }} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>CWA (%)</Label>
+                <Label>Average score (%)</Label>
                 <Input name="previousCWA" type="number" min="0" max="100" step="0.1"
-                  defaultValue={prevCWA ?? ""} placeholder="e.g. 68.4" required autoFocus />
+                  defaultValue={prevWA ?? ""} placeholder="e.g. 68.4" required autoFocus />
               </div>
               <div className="space-y-1.5">
                 <Label>Credit hours</Label>

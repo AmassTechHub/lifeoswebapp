@@ -20,6 +20,7 @@ import {
   Upload,
   CalendarPlus,
   X,
+  Youtube,
 } from "lucide-react";
 
 import Link from "next/link";
@@ -30,6 +31,7 @@ import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
 import { SlideReader } from "@/components/learning/SlideReader";
 import { StudyBrainPanel } from "@/components/learning/StudyBrainPanel";
 import { TimetableGrid } from "@/components/learning/TimetableGrid";
+import { YouTubePanel } from "@/components/learning/YouTubePanel";
 
 import {
   createStudyCourse,
@@ -83,7 +85,7 @@ type Flashcard = {
   courseId: string | null;
 };
 
-type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "timetable";
+type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable";
 
 export function StudyHub({
   courses: initial,
@@ -264,6 +266,7 @@ export function StudyHub({
     { key: "materials", label: "Upload",      Icon: Upload },
     { key: "flashcards",label: "Flashcards",  Icon: Layers },
     { key: "ai-tutor",  label: "AI Tutor",    Icon: Bot },
+    { key: "youtube",   label: "Watch",       Icon: Youtube },
     { key: "timetable", label: "Timetable",   Icon: CalendarDays },
   ];
 
@@ -566,6 +569,10 @@ export function StudyHub({
 
               {tab === "ai-tutor" && (
                 <AITutorPanel courseId={selected.id} courseName={selected.name} />
+              )}
+
+              {tab === "youtube" && (
+                <YouTubePanel courseId={selected.id} />
               )}
 
               {tab === "flashcards" && (

@@ -36,13 +36,10 @@ export function TodaysFocus({ items }: { items: FocusItem[] }) {
         </div>
       </CardHeader>
       <CardContent>
-        <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
-          What matters most today. Execute these before anything else.
-        </p>
         {pending && (
           <Loader2 className="mb-2 h-4 w-4 animate-spin text-accent" aria-hidden />
         )}
-        <ol className="space-y-2.5">
+        <ol className="space-y-2">
           {items.map((item, index) => {
             const canComplete =
               !item.id.startsWith("goal") && item.id !== "welcome" && item.id !== "setup";
@@ -58,22 +55,20 @@ export function TodaysFocus({ items }: { items: FocusItem[] }) {
                         router.refresh();
                       })
                     }
-                    className="flex w-full items-start gap-3 rounded-lg border border-border/60 bg-background/40 px-4 py-3 text-left text-sm transition-all hover:border-accent/25 hover:bg-accent/5"
+                    className="group flex w-full items-center gap-3 rounded-xl border border-border/50 bg-background/40 px-4 py-2.5 text-left text-sm transition-all hover:border-accent/30 hover:bg-accent/5"
                   >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs font-semibold text-accent">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/15 text-[10px] font-bold text-accent">
                       {index + 1}
                     </span>
-                    <span className="pt-0.5">
-                      <span className="block">{item.title}</span>
-                      <span className="text-xs text-muted-foreground">{item.category}</span>
-                    </span>
+                    <span className="min-w-0 flex-1 truncate font-medium">{item.title}</span>
+                    <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/50">{item.category}</span>
                   </button>
                 ) : (
-                  <div className="flex items-start gap-3 rounded-lg border border-border/60 px-4 py-3 text-sm text-muted-foreground">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                  <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-muted/20 px-4 py-2.5 text-sm text-muted-foreground">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-bold">
                       {index + 1}
                     </span>
-                    <span className="pt-0.5">{item.title}</span>
+                    <span className="truncate">{item.title}</span>
                   </div>
                 )}
               </li>

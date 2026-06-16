@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { VoiceAssistant } from "@/components/ai/VoiceAssistant";
 
 export function AppLayoutClient({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -41,6 +42,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
       </div>
 
       <CommandPalette />
+      <VoiceAssistant />
     </div>
   );
 }
