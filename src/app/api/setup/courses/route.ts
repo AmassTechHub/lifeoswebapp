@@ -100,11 +100,6 @@ export async function POST(request: Request) {
   }
 }
 
-// GET: returns the KNUST CS3 Group 1 preset
-export async function GET() {
-  return NextResponse.json({ preset: KNUST_CS3_PRESET });
-}
-
 const KNUST_CS3_PRESET = {
   label: "KNUST B.Sc. CS Year 3 — Semester 2",
   group: 1,

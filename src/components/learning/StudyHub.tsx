@@ -7,6 +7,7 @@ import {
   BookOpen,
   Bot,
   CalendarDays,
+  CalendarPlus,
   FileImage,
   FileText,
   GraduationCap,
@@ -18,7 +19,6 @@ import {
   Sparkles,
   Trash2,
   Upload,
-  CalendarPlus,
   X,
   Youtube,
 } from "lucide-react";
@@ -87,12 +87,18 @@ type Flashcard = {
 
 type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable";
 
+type StreakData = { current: number; longest: number; totalSessions: number; totalMinutes: number };
+
 export function StudyHub({
   courses: initial,
   flashcards,
+  streak,
+  courseTimeSecs,
 }: {
   courses: Course[];
   flashcards: Flashcard[];
+  streak: StreakData;
+  courseTimeSecs: Record<string, number>;
 }) {
   const router = useRouter();
   const [courses] = useState(initial);
@@ -116,27 +122,22 @@ export function StudyHub({
   const summaries = selected?.notes.filter((n) => n.type === "SUMMARY") ?? [];
 
   function getStudyTip(course: Course): string {
-    const code = course.code?.toUpperCase() ?? "";
     const name = course.name.toLowerCase();
-    if (code.startsWith("CSM 388") || name.includes("data struct") || name.includes("algorithm"))
-      return "Active recall works best here. After reading, close your notes and explain the concept from memory. Use flashcards for each data structure.";
-    if (code.startsWith("CSM 352") || name.includes("architecture"))
-      return "Draw diagrams of CPU components and memory hierarchy. Self-quiz on instruction sets. Past exam questions are your best friend.";
-    if (code.startsWith("CSM 354") || name.includes("graphics"))
-      return "Code every algorithm you learn. Math and implementation go together here. Build small demos to reinforce the theory.";
-    if (code.startsWith("CSM 374") || name.includes("embedded") || name.includes("real-time"))
-      return "Timing diagrams and state machines are key. Understand the hardware side before the software. Lab exercises are more valuable than notes.";
-    if (code.startsWith("CSM 358") || name.includes("commerce"))
-      return "Focus on frameworks and real-world examples. Case studies over definitions. The exam tests application, not just recall.";
-    if (code.startsWith("CSM 394") || name.includes("operations research"))
-      return "Practice problems daily. LP, transportation, and network flow require repetition. Do not just read solutions; solve from scratch.";
-    if (code.startsWith("ACF") || name.includes("account") || name.includes("finance"))
-      return "Accounting rewards daily practice. Do journal entries and T-accounts every day. Flashcard the debit/credit rules until they are automatic.";
-    if (code.startsWith("CSM 376") || name.includes("research") || name.includes("project"))
-      return "Break your project into weekly milestones. Write first, refine later. Track progress here so nothing slips through.";
-    if (code.startsWith("CSM 366") || name.includes("mini project"))
-      return "Treat this like a real product. Document as you build. Consistent weekly commits matter more than last-minute pushes.";
-    return "Spaced repetition and active recall are the two most evidence-backed study techniques. Review notes 24h after class and use flashcards to test yourself.";
+    if (name.includes("math") || name.includes("calculus") || name.includes("algebra") || name.includes("statistics"))
+      return "Practice problems daily. Math is a skill, not a subject — repetition beats re-reading every time. Work through past papers.";
+    if (name.includes("algorithm") || name.includes("data struct") || name.includes("discrete"))
+      return "Active recall works best here. After reading, close your notes and explain the concept from memory. Implement every algorithm you study.";
+    if (name.includes("physics") || name.includes("chemistry") || name.includes("biology"))
+      return "Combine theory with practice problems. Draw diagrams to make abstract concepts concrete. Past exam papers are your best revision tool.";
+    if (name.includes("programming") || name.includes("software") || name.includes("code") || name.includes("computer"))
+      return "Build something with every concept you learn. Reading code is not the same as writing it. Upload project files and let AI help you debug and review.";
+    if (name.includes("history") || name.includes("literature") || name.includes("philosophy"))
+      return "Create timelines and mind maps. Focus on cause-and-effect relationships, not just dates. Write short essay outlines to test your understanding.";
+    if (name.includes("account") || name.includes("finance") || name.includes("economics"))
+      return "Practice journal entries and calculations daily. Flashcard key formulas and definitions. Apply theory to real-world examples you can find in the news.";
+    if (name.includes("research") || name.includes("project") || name.includes("thesis"))
+      return "Break the work into weekly milestones and track them here. Write consistently — even 30 minutes a day compounds fast. Start with your outline.";
+    return "Spaced repetition and active recall are the two most evidence-backed study methods. Review your notes 24 hours after class, then use flashcards to test yourself.";
   }
   const courseCards = useMemo(
     () =>
@@ -306,6 +307,24 @@ export function StudyHub({
         )}
       </div>
 
+      {/* Study streak banner */}
+      {(streak.current > 0 || streak.totalSessions > 0) && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Day streak", value: streak.current > 0 ? `${streak.current} 🔥` : "0", sub: `Best: ${streak.longest}d` },
+            { label: "Total sessions", value: String(streak.totalSessions), sub: "all time" },
+            { label: "Time studied", value: streak.totalMinutes >= 60 ? `${Math.floor(streak.totalMinutes / 60)}h ${streak.totalMinutes % 60}m` : `${streak.totalMinutes}m`, sub: "all time" },
+            { label: "Courses", value: String(initial.length), sub: `${flashcards.length} flashcards` },
+          ].map(({ label, value, sub }) => (
+            <div key={label} className="rounded-xl border border-border/60 bg-card/80 px-4 py-3 text-center">
+              <p className="text-lg font-bold text-foreground">{value}</p>
+              <p className="text-xs font-medium text-muted-foreground">{label}</p>
+              <p className="text-[10px] text-muted-foreground/50">{sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {showSetup && (
         <CourseSetupWizard
           onComplete={() => {
@@ -389,7 +408,13 @@ export function StudyHub({
                         style={{ backgroundColor: c.color }}
                       />
                       <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
-                      <span className="text-xs opacity-70">{c._count.notes}</span>
+                      <span className="text-[10px] opacity-50">
+                        {courseTimeSecs[c.id]
+                          ? courseTimeSecs[c.id] >= 3600
+                            ? `${Math.floor(courseTimeSecs[c.id] / 3600)}h`
+                            : `${Math.floor(courseTimeSecs[c.id] / 60)}m`
+                          : `${c._count.notes}n`}
+                      </span>
                     </button>
                   </li>
                 ))}
