@@ -27,9 +27,11 @@ import Link from "next/link";
 
 import { AITutorPanel } from "@/components/learning/AITutorPanel";
 import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
+import { ExamCountdown } from "@/components/learning/ExamCountdown";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
 import { SlideReader } from "@/components/learning/SlideReader";
 import { StudyBrainPanel } from "@/components/learning/StudyBrainPanel";
+import { StudyTimer } from "@/components/learning/StudyTimer";
 import { TimetableGrid } from "@/components/learning/TimetableGrid";
 import { YouTubePanel } from "@/components/learning/YouTubePanel";
 
@@ -83,9 +85,22 @@ type Flashcard = {
   front: string;
   back: string;
   courseId: string | null;
+  difficulty: number;
+  reviewCount: number;
+  nextReviewAt: Date | string | null;
 };
 
-type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable";
+type Deadline = {
+  id: string;
+  title: string;
+  type: string;
+  courseId: string | null;
+  dueDate: Date | string;
+  completed: boolean;
+  course: { name: string; color: string } | null;
+};
+
+type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable" | "exams";
 
 type StreakData = { current: number; longest: number; totalSessions: number; totalMinutes: number };
 
@@ -94,11 +109,13 @@ export function StudyHub({
   flashcards,
   streak,
   courseTimeSecs,
+  deadlines = [],
 }: {
   courses: Course[];
   flashcards: Flashcard[];
   streak: StreakData;
   courseTimeSecs: Record<string, number>;
+  deadlines?: Deadline[];
 }) {
   const router = useRouter();
   const [courses] = useState(initial);
@@ -112,6 +129,12 @@ export function StudyHub({
   const [uploadTitle, setUploadTitle] = useState("");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [showSetup, setShowSetup] = useState(initial.length === 0);
+  const [examPrepNonce, setExamPrepNonce] = useState(0);
+
+  function requestExamPrep() {
+    setTab("ai-tutor");
+    setExamPrepNonce((n) => n + 1);
+  }
 
   const selected = useMemo(
     () => courses.find((c) => c.id === selectedId) ?? courses[0],
@@ -146,6 +169,19 @@ export function StudyHub({
         : flashcards,
     [flashcards, selected]
   );
+
+  const flashcardsByCourse = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const f of flashcards) {
+      if (f.courseId) map[f.courseId] = (map[f.courseId] ?? 0) + 1;
+    }
+    return map;
+  }, [flashcards]);
+
+  const dueToday = useMemo(() => {
+    const now = new Date();
+    return courseCards.filter((c) => !c.nextReviewAt || new Date(c.nextReviewAt as string) <= now).length;
+  }, [courseCards]);
 
   function handleCreateCourse(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -190,9 +226,12 @@ export function StudyHub({
       if (!res.ok) {
         toast.error(data.error ?? "Could not generate plan");
       } else {
+        const parts: string[] = [];
+        if (data.sessionsCreated > 0) parts.push(`${data.sessionsCreated} study session${data.sessionsCreated === 1 ? "" : "s"}`);
+        if (data.tasksScheduled > 0) parts.push(`${data.tasksScheduled} task${data.tasksScheduled === 1 ? "" : "s"}`);
         toast.success(
-          data.sessionsCreated > 0
-            ? `Study plan ready: ${data.sessionsCreated} sessions added to your calendar for the next 7 days`
+          parts.length > 0
+            ? `Timetable ready: ${parts.join(" + ")} added to your calendar for the next 7 days`
             : "No free slots found this week. Your schedule is full."
         );
         router.refresh();
@@ -229,7 +268,9 @@ export function StudyHub({
         });
         const genData = await genRes.json();
         if (genRes.ok && genData.flashcardsCreated > 0) {
-          toast.success(`${genData.flashcardsCreated} flashcards generated from your slides`);
+          toast.success(`${genData.flashcardsCreated} flashcards generated from your slides`, {
+            action: { label: "Exam prep quiz", onClick: requestExamPrep },
+          });
           router.refresh();
         } else {
           toast.success("File uploaded. Use Study Brain to generate flashcards.");
@@ -260,15 +301,16 @@ export function StudyHub({
     if (file) setUploadFile(file);
   }
 
-  const TABS: { key: Tab; label: string; Icon: React.ElementType }[] = [
-    { key: "notes",     label: "Notes",       Icon: FileText },
-    { key: "summaries", label: "Summaries",   Icon: BookOpen },
-    { key: "read",      label: "Read Slides", Icon: ScanText },
-    { key: "materials", label: "Upload",      Icon: Upload },
-    { key: "flashcards",label: "Flashcards",  Icon: Layers },
-    { key: "ai-tutor",  label: "AI Tutor",    Icon: Bot },
-    { key: "youtube",   label: "Watch",       Icon: Youtube },
-    { key: "timetable", label: "Timetable",   Icon: CalendarDays },
+  const TABS: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
+    { key: "notes",      label: "Notes",       Icon: FileText },
+    { key: "summaries",  label: "Summaries",   Icon: BookOpen },
+    { key: "read",       label: "Read Slides", Icon: ScanText },
+    { key: "materials",  label: "Upload",      Icon: Upload },
+    { key: "flashcards", label: "Flashcards",  Icon: Layers, badge: dueToday },
+    { key: "exams",      label: "Exams",       Icon: GraduationCap },
+    { key: "ai-tutor",   label: "AI Tutor",    Icon: Bot },
+    { key: "youtube",    label: "Watch",        Icon: Youtube },
+    { key: "timetable",  label: "Timetable",   Icon: CalendarDays },
   ];
 
   return (
@@ -294,7 +336,7 @@ export function StudyHub({
               ) : (
                 <CalendarPlus className="h-3.5 w-3.5" />
               )}
-              Plan my week
+              Build my timetable
             </button>
             <button
               type="button"
@@ -408,13 +450,11 @@ export function StudyHub({
                         style={{ backgroundColor: c.color }}
                       />
                       <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
-                      <span className="text-[10px] opacity-50">
-                        {courseTimeSecs[c.id]
-                          ? courseTimeSecs[c.id] >= 3600
-                            ? `${Math.floor(courseTimeSecs[c.id] / 3600)}h`
-                            : `${Math.floor(courseTimeSecs[c.id] / 60)}m`
-                          : `${c._count.notes}n`}
-                      </span>
+                      <CourseRing
+                        notes={c._count.notes}
+                        materials={c._count.materials}
+                        cards={flashcardsByCourse[c.id] ?? 0}
+                      />
                     </button>
                   </li>
                 ))}
@@ -450,6 +490,8 @@ export function StudyHub({
               </div>
 
               <StudyBrainPanel courseId={selected.id} courseName={selected.name} />
+
+              <StudyTimer courseId={selected.id} courseName={selected.name} />
 
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
@@ -487,7 +529,7 @@ export function StudyHub({
 
               {/* Tabs */}
               <div className="flex flex-wrap gap-2">
-                {TABS.map(({ key, label, Icon }) => (
+                {TABS.map(({ key, label, Icon, badge }) => (
                   <button
                     key={key}
                     type="button"
@@ -501,6 +543,14 @@ export function StudyHub({
                   >
                     <Icon className="h-4 w-4" />
                     {label}
+                    {badge != null && badge > 0 && (
+                      <span className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                        tab === key ? "bg-white/20 text-white" : "bg-warning/20 text-warning"
+                      )}>
+                        {badge}
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
@@ -589,11 +639,16 @@ export function StudyHub({
               )}
 
               {tab === "read" && (
-                <SlideReader materials={selected.materials} />
+                <SlideReader materials={selected.materials} onRequestExamPrep={requestExamPrep} />
               )}
 
               {tab === "ai-tutor" && (
-                <AITutorPanel courseId={selected.id} courseName={selected.name} />
+                <AITutorPanel
+                  key={`${selected.id}-${examPrepNonce}`}
+                  courseId={selected.id}
+                  courseName={selected.name}
+                  initialMode={examPrepNonce > 0 ? "examPrep" : undefined}
+                />
               )}
 
               {tab === "youtube" && (
@@ -604,6 +659,14 @@ export function StudyHub({
                 <FlashcardsPanel
                   cards={courseCards}
                   courseId={selected.id}
+                  courseName={selected.name}
+                  onRequestExamPrep={requestExamPrep}
+                />
+              )}
+
+              {tab === "exams" && (
+                <ExamCountdown
+                  deadlines={deadlines.filter((d) => d.courseId === selected.id)}
                   courseName={selected.name}
                 />
               )}
@@ -702,6 +765,13 @@ export function StudyHub({
                             <Bot className="h-3.5 w-3.5" />
                             AI Tutor
                           </button>
+                          <button
+                            onClick={requestExamPrep}
+                            className="flex items-center gap-1.5 rounded-lg bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-500/20 transition-colors"
+                          >
+                            <GraduationCap className="h-3.5 w-3.5" />
+                            Exam Prep Quiz
+                          </button>
                         </div>
                       </div>
                       {selected.materials.map((m) => {
@@ -762,5 +832,25 @@ export function StudyHub({
         </div>
       )}
     </div>
+  );
+}
+
+function CourseRing({ notes, materials, cards }: { notes: number; materials: number; cards: number }) {
+  const R = 8;
+  const C = 2 * Math.PI * R;
+  const progress = Math.min((notes / 5 + materials / 3 + cards / 10) / 3, 1);
+  const offset = C * (1 - progress);
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" className="-rotate-90 shrink-0" aria-hidden>
+      <circle cx="10" cy="10" r={R} fill="none" strokeWidth="2.5" className="stroke-muted/40" />
+      <circle
+        cx="10" cy="10" r={R}
+        fill="none" strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeDasharray={C}
+        strokeDashoffset={offset}
+        className="stroke-accent transition-all duration-500"
+      />
+    </svg>
   );
 }

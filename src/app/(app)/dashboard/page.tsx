@@ -1,5 +1,7 @@
 import { LifeEnginePanel } from "@/components/engine/LifeEnginePanel";
 import { AIUsageCard } from "@/components/dashboard/AIUsageCard";
+import { DailyCheckIn } from "@/components/dashboard/DailyCheckIn";
+import { XPBadge } from "@/components/dashboard/XPBadge";
 import { WeeklyAIPlanner } from "@/components/dashboard/WeeklyAIPlanner";
 import { DailyScore } from "@/components/dashboard/DailyScore";
 import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
@@ -36,7 +38,7 @@ export default async function DashboardPage() {
   return (
     <DashboardShell>
       {/* Header */}
-      <header className="mb-5 flex items-center justify-between">
+      <header className="mb-5 flex items-center justify-between gap-4">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/50">
             {today}
@@ -45,7 +47,10 @@ export default async function DashboardPage() {
             {getGreeting()}, {firstName}
           </h1>
         </div>
+        <XPBadge className="hidden sm:flex" />
       </header>
+
+      <DailyCheckIn />
 
       {/* Deadline alert */}
       <DeadlineBanner

@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
 import { VoiceAssistant } from "@/components/ai/VoiceAssistant";
+import { ProductivityNudge } from "@/components/coach/ProductivityNudge";
 
 export function AppLayoutClient({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -43,6 +44,7 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
 
       <CommandPalette />
       <VoiceAssistant />
+      <ProductivityNudge />
     </div>
   );
 }

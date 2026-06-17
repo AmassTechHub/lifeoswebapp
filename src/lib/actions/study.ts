@@ -173,6 +173,21 @@ export async function getStudyStreak(userId: string): Promise<{ current: number;
   return { current, longest, totalSessions: sessions.length, totalMinutes };
 }
 
+export async function getDeadlines(userId: string) {
+  const now = new Date();
+  const ninetyDaysOut = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+  return prisma.deadline.findMany({
+    where: {
+      userId,
+      completed: false,
+      dueDate: { gte: now, lte: ninetyDaysOut },
+    },
+    include: { course: { select: { name: true, color: true } } },
+    orderBy: { dueDate: "asc" },
+    take: 20,
+  });
+}
+
 export async function getCourseTimeSecs(userId: string): Promise<Record<string, number>> {
   const sessions = await prisma.studySession.findMany({
     where: { userId, courseId: { not: null }, durationSecs: { gt: 0 } },

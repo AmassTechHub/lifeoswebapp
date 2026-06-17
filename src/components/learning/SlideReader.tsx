@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, ExternalLink, FileImage, FileText, Maximize2 } from "lucide-react";
+import { Download, ExternalLink, FileImage, FileText, GraduationCap, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Material = {
@@ -30,7 +30,13 @@ function FileIcon({ m }: { m: Material }) {
   return <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />;
 }
 
-export function SlideReader({ materials }: { materials: Material[] }) {
+export function SlideReader({
+  materials,
+  onRequestExamPrep,
+}: {
+  materials: Material[];
+  onRequestExamPrep?: () => void;
+}) {
   const [selected, setSelected] = useState<Material | null>(materials[0] ?? null);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -92,6 +98,15 @@ export function SlideReader({ materials }: { materials: Material[] }) {
               {selected.title || selected.fileName}
             </p>
             <div className="flex shrink-0 items-center gap-1.5">
+              {onRequestExamPrep && (
+                <button
+                  onClick={onRequestExamPrep}
+                  className="flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2.5 py-1.5 text-xs font-semibold text-rose-500 hover:bg-rose-500/20"
+                >
+                  <GraduationCap className="h-3.5 w-3.5" />
+                  Exam Prep Quiz
+                </button>
+              )}
               <button
                 onClick={() => setFullscreen((v) => !v)}
                 className="rounded-lg border border-border/60 p-1.5 text-muted-foreground hover:border-accent/30 hover:text-foreground"

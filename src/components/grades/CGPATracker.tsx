@@ -27,6 +27,15 @@ type Grade = {
 
 type ViewMode = "wa" | "gpa";
 
+type ImprovementRow = {
+  name: string;
+  code: string | null;
+  credits: number;
+  currentScore: number;
+  target75: number;
+  target80: number;
+};
+
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 6 }, (_, i) => CURRENT_YEAR - i);
 const SEMESTERS = ["Semester 1", "Semester 2", "Semester 3", "Term 1", "Term 2", "Term 3", "Fall", "Spring", "Summer"];
@@ -99,6 +108,8 @@ export function CGPATracker({
   const [showTargets, setShowTargets] = useState(true);
   const [aiAdvice, setAiAdvice] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
+  const [improvements, setImprovements] = useState<ImprovementRow[]>([]);
+  const [targetCWA, setTargetCWA] = useState("");
   const [scoreInput, setScoreInput] = useState("");
   const [derivedGrade, setDerivedGrade] = useState("");
 
@@ -165,9 +176,15 @@ export function CGPATracker({
     });
   }
 
+  const targetCWANum = targetCWA ? parseFloat(targetCWA) : null;
+  const targetClass = targetCWANum != null && !isNaN(targetCWANum)
+    ? getAcademicClass(targetCWANum, system)
+    : null;
+
   async function getAIAdvice() {
     setAiLoading(true);
     setAiAdvice(null);
+    setImprovements([]);
     try {
       const res = await fetch("/api/ai/cwa-advice", {
         method: "POST",
@@ -176,15 +193,30 @@ export function CGPATracker({
           currentCWA: wa,
           creditsCompleted: credsDone,
           grades: grades.map((g) => ({ name: g.name, code: g.code, score: g.score, grade: g.grade, credits: g.credits })),
+          targetCWA: targetCWANum,
         }),
       });
       const data = await res.json();
-      setAiAdvice(data.advice);
+      setAiAdvice(data.advice ?? null);
+      setImprovements(data.improvements ?? []);
     } catch {
       toast.error("Could not get AI advice");
     } finally {
       setAiLoading(false);
     }
+  }
+
+  function renderAdvice(text: string) {
+    return text.split("\n").map((line, i) => {
+      const bold = line.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      return (
+        <p
+          key={i}
+          className={cn("text-sm leading-relaxed", line.startsWith("**") ? "mt-3 font-semibold text-foreground" : "text-foreground/80")}
+          dangerouslySetInnerHTML={{ __html: bold }}
+        />
+      );
+    });
   }
 
   return (
@@ -371,24 +403,90 @@ export function CGPATracker({
       {/* ── AI Improvement Advisor ── */}
       {grades.length > 0 && (
         <Card className="border-border/70 bg-card/80">
-          <CardContent className="pt-4">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-sm">
+              <Brain className="h-4 w-4 text-accent" />
+              AI Improvement Advisor
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 pt-0">
+            {/* Target CWA input */}
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 bg-muted/20 px-3 py-2.5">
+              <span className="text-xs text-muted-foreground">I want to reach:</span>
+              <Input
+                type="number" min="0" max="100" step="0.5"
+                className="h-8 w-24 text-sm"
+                value={targetCWA}
+                onChange={(e) => setTargetCWA(e.target.value)}
+                placeholder="e.g. 70"
+              />
+              <span className="text-xs text-muted-foreground">% CWA</span>
+              {targetClass && (
+                <span className={cn("rounded-full px-2.5 py-0.5 text-xs font-semibold", targetClass.color, targetClass.bgColor)}>
+                  → {targetClass.label}
+                </span>
+              )}
+            </div>
+
             {!aiAdvice ? (
               <Button variant="outline" className="w-full gap-2" onClick={getAIAdvice} disabled={aiLoading}>
                 {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4 text-accent" />}
                 {aiLoading ? "Analyzing your academic record…" : "Get AI improvement advice"}
               </Button>
             ) : (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="flex items-center gap-2 text-sm font-semibold">
-                    <Brain className="h-4 w-4 text-accent" />
-                    AI Academic Advisor
-                  </p>
-                  <button onClick={() => setAiAdvice(null)} className="text-xs text-muted-foreground hover:text-foreground">
-                    Refresh
-                  </button>
+              <div className="space-y-4">
+                {/* Course impact table */}
+                {improvements.length > 0 && (
+                  <div className="overflow-hidden rounded-xl border border-border/50">
+                    <div className="border-b border-border/40 bg-muted/30 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Course Impact — ranked by CWA gain potential
+                    </div>
+                    {improvements.slice(0, 6).map((row) => (
+                      <div
+                        key={row.name}
+                        className="flex items-center gap-3 border-b border-border/30 px-3 py-2 last:border-0 hover:bg-muted/20"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-xs font-medium">{row.name}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {row.credits} credits · now {row.currentScore}%
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+                          {row.target75 > 0 && (
+                            <span className="rounded-md bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+                              75% → +{row.target75}
+                            </span>
+                          )}
+                          {row.target80 > 0 && (
+                            <span className="rounded-md bg-success/10 px-1.5 py-0.5 text-[11px] font-medium text-success">
+                              80% → +{row.target80}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    <div className="bg-muted/10 px-3 py-1.5 text-[10px] text-muted-foreground">
+                      Numbers show CWA points gained by raising each course to that score
+                    </div>
+                  </div>
+                )}
+
+                {/* AI advice */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Advisor Analysis
+                    </p>
+                    <button
+                      onClick={() => { setAiAdvice(null); setImprovements([]); }}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                  <div className="space-y-1">{renderAdvice(aiAdvice)}</div>
                 </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/80">{aiAdvice}</p>
               </div>
             )}
           </CardContent>

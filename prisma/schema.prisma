@@ -69,6 +69,22 @@ model User {
   daySnapshots   DaySnapshot[]
   workspaceDocs  WorkspaceDoc[]
   lifeCycleLogs  LifeCycleLog[]
+  pushSubscriptions PushSubscription[]
+
+  xp    Int @default(0)
+  level Int @default(1)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 model Session {
@@ -162,6 +178,7 @@ model Task {
   studyCourse   StudyCourse? @relation(fields: [studyCourseId], references: [id], onDelete: SetNull)
   dueDate       DateTime?
   completed     Boolean      @default(false)
+  notifiedAt    DateTime?
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -282,6 +299,7 @@ model CalendarEvent {
   source        EventSource   @default(MANUAL)
   studyCourseId String?
   studyCourse   StudyCourse?  @relation(fields: [studyCourseId], references: [id], onDelete: SetNull)
+  notifiedAt    DateTime?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
@@ -305,9 +323,11 @@ model DaySnapshot {
   date      DateTime
   score     Int
   breakdown String
-  focusJson String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  focusJson   String
+  energyLevel Int?
+  topPriority String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@unique([userId, date])
 }

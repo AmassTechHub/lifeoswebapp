@@ -13,7 +13,9 @@ import {
   Loader2,
   PiggyBank,
   Plus,
+  RotateCcw,
   Smartphone,
+  Sparkles,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -87,7 +89,7 @@ type MoMoSendState =
   | { phase: "error"; message: string };
 
 type DialogType = "expense" | "income" | "csv" | "momo" | null;
-type Tab = "overview" | "budget";
+type Tab = "overview" | "budget" | "insights";
 
 const CATEGORY_KEYWORDS: Array<[string, string[]]> = [
   ["Transport", ["uber", "bolt", "trotro", "bus", "taxi", "fuel", "petrol", "transport", "ride"]],
@@ -171,6 +173,179 @@ function parseCSV(text: string): ParsedRow[] {
       return { date, description: desc, amount, category: guessCategory(desc) };
     })
     .filter(Boolean) as ParsedRow[];
+}
+
+// ── AI Insights tab ──────────────────────────────────────────────────────────
+
+type InsightData = {
+  period: string;
+  totalIncome: number;
+  totalExpenses: number;
+  net: number;
+  projectedMonthEnd: number;
+  spendingVsLastMonth: number | null;
+  categoryBreakdown: { category: string; spent: number; lastMonth: number; changePercent: number | null; budgetUsedPct: number | null }[];
+};
+
+function renderInsights(text: string) {
+  return text.split("\n").map((line, i) => {
+    const boldMatch = line.match(/^\*\*(.+?)\*\*(.*)/);
+    if (boldMatch) {
+      return (
+        <p key={i} className="mt-4 font-semibold text-foreground first:mt-0">
+          {boldMatch[1]}
+          <span className="font-normal text-foreground/90">{boldMatch[2]}</span>
+        </p>
+      );
+    }
+    if (!line.trim()) return null;
+    return (
+      <p key={i} className="text-sm leading-relaxed text-foreground/80">
+        {line}
+      </p>
+    );
+  });
+}
+
+function FinanceInsightsTab() {
+  const [loading, setLoading] = useState(false);
+  const [insights, setInsights] = useState<string | null>(null);
+  const [data, setData] = useState<InsightData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function generate() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/finance/insights");
+      const json = await res.json() as { insights?: string; data?: InsightData; error?: string };
+      if (!res.ok) throw new Error(json.error ?? "Failed to generate insights");
+      setInsights(json.insights ?? null);
+      setData(json.data ?? null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-accent" />
+        <p className="text-sm text-muted-foreground">Analysing your finances…</p>
+      </div>
+    );
+  }
+
+  if (!insights) {
+    return (
+      <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-border/60 py-20 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
+          <Sparkles className="h-7 w-7 text-accent" />
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">AI Financial Analysis</p>
+          <p className="mt-1.5 max-w-xs text-sm text-muted-foreground">
+            Let Claude analyze your spending patterns, compare to last month, and give you one smart action to take now.
+          </p>
+        </div>
+        <button
+          onClick={generate}
+          className="flex items-center gap-2 rounded-xl bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          <Sparkles className="h-4 w-4" />
+          Generate analysis
+        </button>
+        {error && (
+          <p className="max-w-xs rounded-lg border border-danger/20 bg-danger/5 px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const netPositive = (data?.net ?? 0) >= 0;
+
+  return (
+    <div className="space-y-5">
+      {/* Quick stat strip */}
+      {data && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-xl border border-border/60 bg-card/80 p-3 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Income</p>
+            <p className="mt-1 text-lg font-bold text-success">₵{data.totalIncome.toFixed(2)}</p>
+          </div>
+          <div className="rounded-xl border border-border/60 bg-card/80 p-3 text-center">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Spent</p>
+            <p className="mt-1 text-lg font-bold text-danger">₵{data.totalExpenses.toFixed(2)}</p>
+          </div>
+          <div className={cn("rounded-xl border p-3 text-center", netPositive ? "border-success/20 bg-success/5" : "border-danger/20 bg-danger/5")}>
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Net</p>
+            <p className={cn("mt-1 text-lg font-bold", netPositive ? "text-success" : "text-danger")}>
+              {netPositive ? "+" : ""}₵{data.net.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* AI Insights card */}
+      <Card className="border-accent/20 bg-accent/5">
+        <CardContent className="pt-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-accent" />
+            <p className="text-sm font-semibold text-accent">AI Analysis — {data?.period}</p>
+          </div>
+          <div className="space-y-1">{renderInsights(insights)}</div>
+        </CardContent>
+      </Card>
+
+      {/* Spending change summary */}
+      {data && data.categoryBreakdown.length > 0 && (
+        <Card className="border-border/70 bg-card/80">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Spending vs last month</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {data.categoryBreakdown.slice(0, 6).map((c) => (
+              <div key={c.category} className="flex items-center justify-between gap-2 text-sm">
+                <span className="text-muted-foreground">{c.category}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold tabular-nums">₵{c.spent.toFixed(2)}</span>
+                  {c.changePercent !== null && (
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                      c.changePercent > 0 ? "bg-danger/10 text-danger" : "bg-success/10 text-success"
+                    )}>
+                      {c.changePercent > 0 ? "+" : ""}{c.changePercent}%
+                    </span>
+                  )}
+                  {c.budgetUsedPct !== null && (
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                      c.budgetUsedPct >= 100 ? "bg-danger/15 text-danger" :
+                      c.budgetUsedPct >= 80 ? "bg-warning/15 text-warning" : "text-muted-foreground/60"
+                    )}>
+                      {c.budgetUsedPct}% budget
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <button
+        onClick={generate}
+        className="flex items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <RotateCcw className="h-3.5 w-3.5" />
+        Refresh analysis
+      </button>
+    </div>
+  );
 }
 
 export function FinancePanel({
@@ -352,7 +527,23 @@ export function FinancePanel({
           <PiggyBank className="h-4 w-4" />
           Budget Planner
         </button>
+        <button
+          type="button"
+          onClick={() => setTab("insights")}
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            tab === "insights"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Sparkles className="h-4 w-4" />
+          AI Insights
+        </button>
       </div>
+
+      {/* AI Insights tab */}
+      {tab === "insights" && <FinanceInsightsTab />}
 
       {/* Budget Planner tab */}
       {tab === "budget" && (

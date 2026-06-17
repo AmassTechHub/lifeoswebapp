@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Coffee, Flame, Pause, Play, RotateCcw, Zap } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,9 @@ const PRESETS = [
 const RING_R = 120;
 const RING_C = 2 * Math.PI * RING_R;
 
-export function FocusMode() {
+type Course = { id: string; name: string; code: string | null };
+
+export function FocusMode({ courses = [] }: { courses?: Course[] }) {
   const [presetIdx, setPresetIdx] = useState(0);
   const preset = PRESETS[presetIdx];
   const [isBreak, setIsBreak] = useState(false);
@@ -25,11 +28,16 @@ export function FocusMode() {
   const [secondsLeft, setSecondsLeft] = useState(preset.focus * 60);
   const [label, setLabel] = useState("");
   const [sessions, setSessions] = useState(0);
+  const [courseId, setCourseId] = useState("");
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const courseIdRef = useRef("");
 
   const totalSeconds = (isBreak ? preset.break : preset.focus) * 60;
   const progress = 1 - secondsLeft / totalSeconds;
   const dashOffset = RING_C * (1 - progress);
+
+  // Keep courseIdRef in sync for use inside setInterval callback
+  useEffect(() => { courseIdRef.current = courseId; }, [courseId]);
 
   // Reset when switching preset or mode
   useEffect(() => {
@@ -48,7 +56,25 @@ export function FocusMode() {
       setSecondsLeft((prev) => {
         if (prev > 1) return prev - 1;
         // Session complete
-        if (!isBreak) setSessions((s) => s + 1);
+        if (!isBreak) {
+          setSessions((s) => s + 1);
+          // Log focus session to DB (fire and forget)
+          void fetch("/api/study/session", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              courseId: courseIdRef.current || null,
+              durationSecs: preset.focus * 60,
+              startedAt: new Date(Date.now() - preset.focus * 60 * 1000).toISOString(),
+              endedAt: new Date().toISOString(),
+            }),
+          })
+            .then((r) => r.json())
+            .then((d: { xpEarned?: number }) => {
+              if (d.xpEarned) toast.success(`Focus session logged! +${d.xpEarned} XP`);
+            })
+            .catch(() => {});
+        }
         setIsBreak((b) => {
           const next = !b;
           setSecondsLeft((next ? preset.break : preset.focus) * 60);
@@ -224,18 +250,42 @@ export function FocusMode() {
         </div>
 
         {/* What are you locking in */}
-        <div className="w-full max-w-sm space-y-2">
-          <label htmlFor="focus-label" className="block text-xs font-medium text-muted-foreground">
-            <PresetIcon className="mr-1 inline h-3.5 w-3.5" />
-            What are you locking in on?
-          </label>
-          <input
-            id="focus-label"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="e.g. DSA: binary trees, YouTube script, client proposal..."
-            className="w-full rounded-xl border border-border/70 bg-card/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 backdrop-blur-sm focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
-          />
+        <div className="w-full max-w-sm space-y-3">
+          <div className="space-y-2">
+            <label htmlFor="focus-label" className="block text-xs font-medium text-muted-foreground">
+              <PresetIcon className="mr-1 inline h-3.5 w-3.5" />
+              What are you locking in on?
+            </label>
+            <input
+              id="focus-label"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="e.g. DSA: binary trees, YouTube script, client proposal..."
+              className="w-full rounded-xl border border-border/70 bg-card/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 backdrop-blur-sm focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+            />
+          </div>
+
+          {courses.length > 0 && (
+            <div className="space-y-2">
+              <label htmlFor="focus-course" className="block text-xs font-medium text-muted-foreground">
+                Studying for...
+              </label>
+              <select
+                id="focus-course"
+                value={courseId}
+                onChange={(e) => setCourseId(e.target.value)}
+                className="w-full rounded-xl border border-border/70 bg-card/50 px-4 py-3 text-sm text-foreground backdrop-blur-sm focus:border-accent/60 focus:outline-none focus:ring-2 focus:ring-accent/20"
+              >
+                <option value="">General study</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code ? `${c.code} — ${c.name}` : c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <AnimatePresence>
             {label.trim() && (
               <motion.p

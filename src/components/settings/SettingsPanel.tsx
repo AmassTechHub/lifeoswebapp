@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  Bell,
+  BellOff,
   Bot,
   Calendar,
   Check,
@@ -27,6 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
+import { getExistingSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push/client";
 import { getInitials } from "@/lib/user";
 
 interface SettingsPanelProps {
@@ -204,6 +207,97 @@ function MoMoSettingsCard() {
             Save MoMo credentials
           </Button>
         </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function NotificationSettingsCard() {
+  const [supported, setSupported] = useState(true);
+  const [subscribed, setSubscribed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [working, setWorking] = useState(false);
+
+  useEffect(() => {
+    setSupported(pushSupported());
+    getExistingSubscription()
+      .then((sub) => setSubscribed(!!sub))
+      .catch(() => setSubscribed(false))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleEnable() {
+    setWorking(true);
+    try {
+      await subscribeToPush();
+      setSubscribed(true);
+      toast.success("Notifications enabled — you'll get an alert whenever a study session, task, or event is starting.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not enable notifications");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function handleDisable() {
+    setWorking(true);
+    try {
+      await unsubscribeFromPush();
+      setSubscribed(false);
+      toast.success("Notifications disabled");
+    } catch {
+      toast.error("Could not disable notifications");
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Bell className="h-4 w-4 text-accent" />
+          <CardTitle>Notifications</CardTitle>
+        </div>
+        <CardDescription>
+          Get a real push notification whenever a scheduled study session, task block, or calendar event is starting — even if the tab isn&apos;t focused.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!supported ? (
+          <p className="rounded-lg border border-warning/20 bg-warning/5 px-4 py-3 text-xs text-warning">
+            This browser doesn&apos;t support push notifications. Try Chrome, Edge, or Firefox.
+          </p>
+        ) : loading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border/60 px-4 py-4">
+            <div>
+              <p className="text-sm font-medium">{subscribed ? "Notifications are on" : "Notifications are off"}</p>
+              <p className="text-xs text-muted-foreground">
+                {subscribed
+                  ? "We'll alert this device when something on your timetable is starting."
+                  : "Turn this on to get alerted automatically when it's time."}
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant={subscribed ? "outline" : "default"}
+              disabled={working}
+              onClick={subscribed ? handleDisable : handleEnable}
+              className="shrink-0 gap-2"
+            >
+              {working ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : subscribed ? (
+                <BellOff className="h-4 w-4" />
+              ) : (
+                <Bell className="h-4 w-4" />
+              )}
+              {subscribed ? "Disable" : "Enable notifications"}
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -498,6 +592,8 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
           </form>
         </CardContent>
       </Card>
+
+      <NotificationSettingsCard />
 
       <MoMoSettingsCard />
 

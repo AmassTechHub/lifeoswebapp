@@ -754,3 +754,118 @@ body {
     transform: none;
   }
 }
+
+/* Tiptap block editor */
+.tiptap {
+  outline: none;
+  min-height: 24rem;
+}
+.tiptap > * + * {
+  margin-top: 0.6em;
+}
+.tiptap h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1.2em; }
+.tiptap h2 { font-size: 1.25rem; font-weight: 700; margin-top: 1em; }
+.tiptap h3 { font-size: 1.1rem; font-weight: 600; margin-top: 0.8em; }
+.tiptap p.is-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: var(--muted-foreground);
+  opacity: 0.5;
+}
+.tiptap ul, .tiptap ol {
+  padding-left: 1.4rem;
+}
+.tiptap ul:not([data-type="taskList"]) { list-style: disc; }
+.tiptap ol { list-style: decimal; }
+.tiptap blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 0.9rem;
+  color: var(--muted-foreground);
+}
+.tiptap code {
+  background: var(--muted);
+  border-radius: 0.25rem;
+  padding: 0.1rem 0.35rem;
+  font-size: 0.85em;
+}
+.tiptap pre {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-x: auto;
+}
+.tiptap pre code {
+  background: none;
+  padding: 0;
+}
+.tiptap hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1rem 0;
+}
+.tiptap ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.2rem;
+}
+.tiptap ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.tiptap ul[data-type="taskList"] li > label {
+  margin-top: 0.2rem;
+  user-select: none;
+}
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div > p {
+  text-decoration: line-through;
+  color: var(--muted-foreground);
+}
+.tiptap table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+.tiptap table td, .tiptap table th {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+  position: relative;
+}
+.tiptap table th {
+  background: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.slash-menu {
+  position: fixed;
+  z-index: 60;
+  width: 15rem;
+  max-height: 18rem;
+  overflow-y: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: var(--popover);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+  padding: 0.35rem;
+}
+.slash-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--foreground);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.slash-menu-item.is-selected,
+.slash-menu-item:hover {
+  background: var(--muted);
+}

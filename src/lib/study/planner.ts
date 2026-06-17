@@ -8,6 +8,9 @@ const PLAN_DAYS = 7;
 const DAY_START = 7 * 60;   // 7:00 AM
 const DAY_END   = 22 * 60;  // 10:00 PM
 
+const TASK_MINUTES = 30;
+const MAX_TASK_BLOCKS_PER_DAY = 6;
+
 function toMins(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
@@ -165,4 +168,136 @@ export async function generateStudyPlan(userId: string) {
   }
 
   return { sessionsCreated: toCreate.length };
+}
+
+// Places pending to-do tasks into whatever free time remains after study
+// sessions and classes are accounted for. Run this after generateStudyPlan
+// so it sees the freshly-created study blocks as busy time.
+export async function scheduleTasksInFreeTime(userId: string) {
+  const now = new Date();
+  const planStart = startOfDay(now);
+  const planEnd = new Date(planStart);
+  planEnd.setDate(planEnd.getDate() + PLAN_DAYS);
+
+  const [courses, existingEvents, tasks] = await Promise.all([
+    prisma.studyCourse.findMany({ where: { userId }, include: { scheduleSlots: true } }),
+    prisma.calendarEvent.findMany({
+      where: { userId, startAt: { gte: planStart, lt: planEnd } },
+    }),
+    prisma.task.findMany({
+      where: { userId, completed: false },
+      orderBy: [{ dueDate: "asc" }, { createdAt: "asc" }],
+      take: 30,
+    }),
+  ]);
+
+  if (tasks.length === 0) return { tasksScheduled: 0 };
+
+  // Remove old auto-generated task blocks so re-planning doesn't duplicate them
+  await prisma.calendarEvent.deleteMany({
+    where: {
+      userId,
+      source: "SYSTEM",
+      startAt: { gte: planStart, lt: planEnd },
+      title: { startsWith: "Task:" },
+    },
+  });
+
+  const toCreate: {
+    userId: string;
+    title: string;
+    description: string;
+    startAt: Date;
+    endAt: Date;
+    category: (typeof tasks)[number]["category"];
+    source: "SYSTEM";
+  }[] = [];
+
+  let taskCursor = 0;
+
+  for (let offset = 0; offset < PLAN_DAYS && taskCursor < tasks.length; offset++) {
+    const date = new Date(planStart);
+    date.setDate(date.getDate() + offset);
+    const courseDay = jsDayToCourseDay(date.getDay());
+
+    const busy: [number, number][] = [];
+    for (const course of courses) {
+      for (const slot of course.scheduleSlots) {
+        if (slot.dayOfWeek === courseDay) busy.push([toMins(slot.startTime), toMins(slot.endTime)]);
+      }
+    }
+
+    const dayBoundary = startOfDay(date);
+    const nextDayBoundary = new Date(dayBoundary);
+    nextDayBoundary.setDate(nextDayBoundary.getDate() + 1);
+
+    for (const ev of existingEvents) {
+      if (ev.startAt >= dayBoundary && ev.startAt < nextDayBoundary) {
+        busy.push([ev.startAt.getHours() * 60 + ev.startAt.getMinutes(), ev.endAt.getHours() * 60 + ev.endAt.getMinutes()]);
+      }
+    }
+    for (const ev of toCreate) {
+      if (ev.startAt >= dayBoundary && ev.startAt < nextDayBoundary) {
+        busy.push([ev.startAt.getHours() * 60 + ev.startAt.getMinutes(), ev.endAt.getHours() * 60 + ev.endAt.getMinutes()]);
+      }
+    }
+
+    busy.sort((a, b) => a[0] - b[0]);
+    const merged: [number, number][] = [];
+    for (const [s, e] of busy) {
+      if (merged.length && s <= merged[merged.length - 1][1] + BUFFER_MINUTES) {
+        merged[merged.length - 1][1] = Math.max(merged[merged.length - 1][1], e);
+      } else {
+        merged.push([s, e]);
+      }
+    }
+
+    const freeSlots: [number, number][] = [];
+    let cursor = DAY_START;
+    if (date.getTime() === dayBoundary.getTime() && dayBoundary.getTime() === startOfDay(now).getTime()) {
+      // Don't schedule task blocks into the past on today's date
+      cursor = Math.max(cursor, now.getHours() * 60 + now.getMinutes() + 10);
+    }
+    for (const [busyStart, busyEnd] of merged) {
+      if (busyStart - cursor >= TASK_MINUTES) freeSlots.push([cursor, busyStart]);
+      cursor = Math.max(cursor, busyEnd + BUFFER_MINUTES);
+    }
+    if (DAY_END - cursor >= TASK_MINUTES) freeSlots.push([cursor, DAY_END]);
+
+    let blocksToday = 0;
+    for (const [slotStart, slotEnd] of freeSlots) {
+      if (blocksToday >= MAX_TASK_BLOCKS_PER_DAY || taskCursor >= tasks.length) break;
+
+      let slotCursor = slotStart;
+      while (
+        slotEnd - slotCursor >= TASK_MINUTES &&
+        blocksToday < MAX_TASK_BLOCKS_PER_DAY &&
+        taskCursor < tasks.length
+      ) {
+        const task = tasks[taskCursor];
+        const startAt = atTime(date, Math.floor(slotCursor / 60), slotCursor % 60);
+        const endAt = new Date(startAt.getTime() + TASK_MINUTES * 60_000);
+
+        toCreate.push({
+          userId,
+          title: `Task: ${task.title}`,
+          description: task.description ?? "",
+          startAt,
+          endAt,
+          category: task.category,
+          source: "SYSTEM",
+        });
+
+        taskCursor++;
+        slotCursor += TASK_MINUTES + BUFFER_MINUTES;
+        blocksToday++;
+      }
+    }
+  }
+
+  if (toCreate.length > 0) {
+    await prisma.calendarEvent.createMany({ data: toCreate });
+  }
+
+  return { tasksScheduled: toCreate.length };
 }

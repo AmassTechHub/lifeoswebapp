@@ -5,6 +5,7 @@ const MAX_CONTEXT_CHARS = 12_000;
 
 export type StudySource = {
   id: string;
+  tag: string; // citation tag e.g. "S1" — AI references this inline, UI maps it back to this source
   kind: "note" | "material";
   title: string;
   excerpt: string;
@@ -75,31 +76,47 @@ export async function buildCourseContext(
   userId: string,
   courseId: string
 ): Promise<CourseContextBuilt | null> {
-  const course = await prisma.studyCourse.findFirst({
-    where: { id: courseId, userId },
-    include: {
-      notes: { orderBy: { updatedAt: "desc" }, take: 12 },
-      materials: { orderBy: { createdAt: "desc" }, take: 6 },
-    },
-  });
+  const [course, flashcards] = await Promise.all([
+    prisma.studyCourse.findFirst({
+      where: { id: courseId, userId },
+      include: {
+        notes: { orderBy: { updatedAt: "desc" }, take: 12 },
+        materials: { orderBy: { createdAt: "desc" }, take: 6 },
+      },
+    }),
+    prisma.flashcard.findMany({
+      where: { courseId, userId },
+      orderBy: { createdAt: "desc" },
+      take: 40,
+      select: { id: true, front: true, back: true },
+    }),
+  ]);
 
   if (!course) return null;
 
   const sources: StudySource[] = [];
   const parts: string[] = [`Course: ${course.name}${course.code ? ` (${course.code})` : ""}`];
+  let n = 0;
 
   for (const note of course.notes) {
+    const tag = `S${++n}`;
     const excerpt = note.content.slice(0, 2000);
-    const tag = `[${note.type}] ${note.title}`;
-    sources.push({ id: note.id, kind: "note", title: note.title, excerpt });
-    parts.push(`\n${tag}\n${excerpt}`);
+    sources.push({ id: note.id, tag, kind: "note", title: note.title, excerpt });
+    parts.push(`\n[${tag}] (${note.type}) ${note.title}\n${excerpt}`);
   }
 
   for (const material of course.materials) {
+    const tag = `S${++n}`;
     const excerpt = await materialExcerpt(material);
-    const tag = `[MATERIAL] ${material.title}`;
-    sources.push({ id: material.id, kind: "material", title: material.title, excerpt });
-    parts.push(`\n${tag}\n${excerpt}`);
+    sources.push({ id: material.id, tag, kind: "material", title: material.title, excerpt });
+    parts.push(`\n[${tag}] (MATERIAL) ${material.title}\n${excerpt}`);
+  }
+
+  if (flashcards.length > 0) {
+    const tag = `S${++n}`;
+    const excerpt = flashcards.map((f) => `Q: ${f.front} | A: ${f.back}`).join("\n");
+    sources.push({ id: "flashcards", tag, kind: "note", title: "Flashcards", excerpt });
+    parts.push(`\n[${tag}] (FLASHCARDS)\n${excerpt}`);
   }
 
   return {
