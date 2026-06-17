@@ -32,22 +32,24 @@ export function StudySnapshot({
           </p>
         ) : (
           <>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {courses.map((c) => (
-                <li
-                  key={c.id}
-                  className="flex items-center justify-between rounded-lg border border-border/60 px-3 py-2 text-sm"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: c.color }}
-                    />
-                    {c.name}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {c._count.notes} notes · {c._count.materials} files
-                  </span>
+                <li key={c.id}>
+                  <Link
+                    href="/learning"
+                    className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/10 px-3 py-2 text-sm transition-colors hover:border-accent/25 hover:bg-accent/5"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 font-medium">
+                      <span
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <span className="truncate">{c.name}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      {c._count.notes} notes · {c._count.materials} files
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>

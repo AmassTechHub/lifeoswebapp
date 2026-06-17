@@ -33,7 +33,7 @@ export function UpcomingDeadlines({ deadlines }: { deadlines: Deadline[] }) {
             <Link
               key={item.id}
               href={item.href}
-              className="flex items-start justify-between gap-3 rounded-lg border border-border/60 px-4 py-3 transition-colors hover:border-accent/25 hover:bg-accent/5"
+              className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-muted/10 px-4 py-3 transition-colors hover:border-accent/25 hover:bg-accent/5"
             >
               <div>
                 <p className="text-sm font-medium">{item.title}</p>

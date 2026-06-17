@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 
 import { dashboardCardClass } from "@/components/dashboard/dashboard-styles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,19 @@ export function FinanceSnapshot({
   income: number;
   net: number;
 }) {
+  const netPositive = net >= 0;
+  const stats = [
+    { label: "Income", value: income, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
+    { label: "Expenses", value: expenses, icon: TrendingDown, color: "text-danger", bg: "bg-danger/10" },
+    {
+      label: "Net",
+      value: net,
+      icon: Wallet,
+      color: netPositive ? "text-success" : "text-danger",
+      bg: netPositive ? "bg-success/10" : "bg-danger/10",
+    },
+  ];
+
   return (
     <Card className={dashboardCardClass()}>
       <CardHeader>
@@ -23,21 +37,21 @@ export function FinanceSnapshot({
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="grid grid-cols-3 gap-3 text-center sm:text-left">
-        <div>
-          <p className="text-xs text-muted-foreground">In</p>
-          <p className="text-lg font-bold text-success">₵{income.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Out</p>
-          <p className="text-lg font-bold text-danger">₵{expenses.toFixed(0)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">Net</p>
-          <p className={cn("text-lg font-bold", net >= 0 ? "text-success" : "text-danger")}>
-            ₵{net.toFixed(0)}
-          </p>
-        </div>
+      <CardContent className="grid grid-cols-3 gap-2">
+        {stats.map(({ label, value, icon: Icon, color, bg }) => (
+          <div
+            key={label}
+            className="rounded-lg border border-border/50 bg-muted/10 px-2 py-2.5 text-center transition-colors hover:border-accent/25 hover:bg-accent/5"
+          >
+            <div className={cn("mx-auto mb-1.5 flex h-7 w-7 items-center justify-center rounded-full", bg)}>
+              <Icon className={cn("h-3.5 w-3.5", color)} />
+            </div>
+            <p className="text-[10px] text-muted-foreground">{label}</p>
+            <p className={cn("text-base font-bold tabular-nums", color)}>
+              {value < 0 ? "-" : ""}₵{Math.abs(value).toFixed(0)}
+            </p>
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

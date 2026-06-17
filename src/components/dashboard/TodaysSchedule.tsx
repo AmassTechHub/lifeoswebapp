@@ -42,7 +42,7 @@ export function TodaysSchedule({ schedule }: { schedule: Block[] }) {
             {schedule.map((block) => (
               <div
                 key={block.id}
-                className="flex items-center gap-2 rounded-lg border border-border/60 px-3 py-3 sm:gap-4 sm:px-4"
+                className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/10 px-3 py-3 transition-colors hover:border-accent/25 hover:bg-accent/5 sm:gap-4 sm:px-4"
               >
                 <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground sm:w-14">
                   {formatTime(new Date(block.startAt))}

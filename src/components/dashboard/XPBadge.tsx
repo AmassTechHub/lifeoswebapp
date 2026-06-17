@@ -29,21 +29,25 @@ export function XPBadge({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "flex items-center gap-2 rounded-lg border border-border/60 bg-card/60 px-3 py-2",
+        "flex items-center gap-2.5 rounded-lg border border-warning/20 bg-warning/5 px-3 py-2 shadow-sm",
         className
       )}
     >
-      <div className="flex items-center gap-1.5">
+      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-warning/15">
         <Zap className="h-3.5 w-3.5 text-warning" />
-        <span className="text-xs font-bold text-foreground">Lv.{data.level}</span>
       </div>
-      <div className="h-1.5 min-w-[60px] flex-1 rounded-full bg-muted/50">
-        <div
-          className="h-full rounded-full bg-warning transition-all duration-700"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold text-foreground">Level {data.level}</span>
+          <span className="text-[10px] text-muted-foreground">{data.xp} XP</span>
+        </div>
+        <div className="h-1.5 min-w-15 flex-1 rounded-full bg-muted/50">
+          <div
+            className="h-full rounded-full bg-warning transition-all duration-700"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
-      <span className="text-[10px] text-muted-foreground">{data.xp}xp</span>
     </div>
   );
 }
