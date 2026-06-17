@@ -77,7 +77,7 @@ export default async function DashboardPage() {
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             Today&apos;s Priorities
           </p>
-          <StaggeredGrid className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <StaggeredGrid className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <StaggerItem className="lg:col-span-2">
               <TodaysFocus items={data.focusItems} />
             </StaggerItem>
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             Quick Overview
           </p>
-          <StaggeredGrid className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <StaggeredGrid className="grid grid-cols-1 items-start gap-4 sm:grid-cols-3">
             <StaggerItem>
               <StudySnapshot courses={data.studyCourses} recentNotes={data.recentNotes} />
             </StaggerItem>
@@ -118,7 +118,7 @@ export default async function DashboardPage() {
           <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
             Your Day
           </p>
-          <StaggeredGrid className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <StaggeredGrid className="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
             <StaggerItem className="lg:col-span-2">
               <TodaysSchedule schedule={data.schedule} />
             </StaggerItem>

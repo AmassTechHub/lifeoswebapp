@@ -102,7 +102,7 @@ export function SmartActions() {
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
       {actions.map((item) => {
         const Icon = item.icon;
         const isAction = "action" in item;
@@ -112,7 +112,7 @@ export function SmartActions() {
             type="button"
             disabled={isAction && pending}
             onClick={() => handleAction(item)}
-            className={`${dashboardCardClass()} flex items-start gap-3 p-4 text-left transition-all hover:border-accent/30 hover:bg-card disabled:opacity-60`}
+            className={`${dashboardCardClass()} flex items-start gap-3 p-3 text-left transition-all hover:border-accent/30 hover:bg-card disabled:opacity-60`}
           >
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent/10 text-accent">
               {isAction && pending ? (
