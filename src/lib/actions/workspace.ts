@@ -10,14 +10,20 @@ export async function createWorkspaceDoc(formData: FormData) {
   const title = String(formData.get("title") ?? "").trim();
   const folder = String(formData.get("folder") ?? "General").trim() || "General";
   const content = String(formData.get("content") ?? "");
+  const parentId = String(formData.get("parentId") ?? "").trim() || null;
 
   if (!title) return { error: "Title required" };
 
-  await prisma.workspaceDoc.create({
-    data: { userId, title, folder, content },
+  if (parentId) {
+    const parent = await prisma.workspaceDoc.findFirst({ where: { id: parentId, userId } });
+    if (!parent) return { error: "Parent page not found" };
+  }
+
+  const doc = await prisma.workspaceDoc.create({
+    data: { userId, title, folder, content, parentId },
   });
   revalidatePath("/workspace");
-  return { ok: true };
+  return { ok: true, id: doc.id };
 }
 
 export async function updateWorkspaceDoc(id: string, formData: FormData) {

@@ -15,6 +15,8 @@ import Placeholder from "@tiptap/extension-placeholder";
 import {
   Bold,
   CheckSquare,
+  ChevronDown,
+  ChevronRight,
   Code,
   Heading1,
   Heading2,
@@ -48,7 +50,23 @@ type Doc = {
   content: string;
   folder: string;
   pinned: boolean;
+  parentId: string | null;
 };
+
+type DocNode = Doc & { children: DocNode[] };
+
+function buildTree(docs: Doc[]): DocNode[] {
+  const byParent = new Map<string | null, Doc[]>();
+  for (const d of docs) {
+    const key = d.parentId ?? null;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(d);
+  }
+  function attach(parentId: string | null): DocNode[] {
+    return (byParent.get(parentId) ?? []).map((d) => ({ ...d, children: attach(d.id) }));
+  }
+  return attach(null);
+}
 
 function parseContent(raw: string): string | JSONContent {
   if (!raw) return "";
@@ -91,6 +109,75 @@ const TOOLBAR_ITEMS: {
   { label: "Divider", icon: <Minus className="h-3.5 w-3.5" />, isActive: () => false, run: (e) => e.chain().focus().setHorizontalRule().run() },
 ];
 
+function DocTreeItem({
+  node,
+  depth,
+  selectedId,
+  expanded,
+  onSelect,
+  onToggle,
+  onAddSubpage,
+}: {
+  node: DocNode;
+  depth: number;
+  selectedId: string | null;
+  expanded: Set<string>;
+  onSelect: (id: string) => void;
+  onToggle: (id: string) => void;
+  onAddSubpage: (parentId: string) => void;
+}) {
+  const isOpen = expanded.has(node.id);
+  const hasChildren = node.children.length > 0;
+
+  return (
+    <li>
+      <div
+        className={cn(
+          "group flex items-center gap-0.5 rounded-lg pr-1 transition-colors",
+          selectedId === node.id ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        )}
+        style={{ paddingLeft: `${depth * 14}px` }}
+      >
+        <button
+          type="button"
+          onClick={() => onToggle(node.id)}
+          className={cn("flex h-6 w-5 shrink-0 items-center justify-center", !hasChildren && "opacity-0")}
+        >
+          {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+        </button>
+        <button type="button" onClick={() => onSelect(node.id)} className="min-w-0 flex-1 py-2 text-left">
+          <p className="truncate text-[13px] font-medium">{node.title}</p>
+          {depth === 0 && <p className="truncate text-[11px] opacity-60">{node.folder}</p>}
+        </button>
+        <button
+          type="button"
+          title="Add subpage"
+          onClick={() => onAddSubpage(node.id)}
+          className="shrink-0 rounded p-1 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
+        >
+          <Plus className="h-3 w-3" />
+        </button>
+      </div>
+      {isOpen && hasChildren && (
+        <ul className="space-y-0.5">
+          {node.children.map((child) => (
+            <DocTreeItem
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              selectedId={selectedId}
+              expanded={expanded}
+              onSelect={onSelect}
+              onToggle={onToggle}
+              onAddSubpage={onAddSubpage}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 export function WorkspaceEditor({
   docs,
   folders,
@@ -103,6 +190,28 @@ export function WorkspaceEditor({
   const [selectedId, setSelectedId] = useState<string | null>(docs[0]?.id ?? null);
   const [editTitle, setEditTitle] = useState<string>(docs[0]?.title ?? "");
   const [saveState, setSaveState] = useState<"saved" | "unsaved" | "saving">("saved");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  function handleAddSubpage(parentId: string) {
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("title", "Untitled");
+      fd.set("parentId", parentId);
+      const res = await createWorkspaceDoc(fd);
+      if (res.error) { toast.error(res.error); return; }
+      setExpanded((prev) => new Set(prev).add(parentId));
+      if (res.id) setSelectedId(res.id);
+      router.refresh();
+    });
+  }
 
   const selected = docs.find((d) => d.id === selectedId);
   const selectedFolderRef = useRef(selected?.folder ?? "General");
@@ -209,22 +318,17 @@ export function WorkspaceEditor({
           <Card className="border-border/70 bg-card/80">
             <CardContent className="p-2">
               <ul className="space-y-0.5">
-                {docs.map((d) => (
-                  <li key={d.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(d.id)}
-                      className={cn(
-                        "w-full rounded-lg px-3 py-2.5 text-left transition-colors",
-                        selectedId === d.id
-                          ? "bg-accent/10 text-accent"
-                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                      )}
-                    >
-                      <p className="truncate text-[13px] font-medium">{d.title}</p>
-                      <p className="truncate text-[11px] opacity-60">{d.folder}</p>
-                    </button>
-                  </li>
+                {buildTree(docs).map((node) => (
+                  <DocTreeItem
+                    key={node.id}
+                    node={node}
+                    depth={0}
+                    selectedId={selectedId}
+                    expanded={expanded}
+                    onSelect={setSelectedId}
+                    onToggle={toggleExpanded}
+                    onAddSubpage={handleAddSubpage}
+                  />
                 ))}
               </ul>
             </CardContent>

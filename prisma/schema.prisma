@@ -70,9 +70,34 @@ model User {
   workspaceDocs  WorkspaceDoc[]
   lifeCycleLogs  LifeCycleLog[]
   pushSubscriptions PushSubscription[]
+  customDatabases   CustomDatabase[]
 
   xp    Int @default(0)
   level Int @default(1)
+}
+
+model CustomDatabase {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  icon       String   @default("Table")
+  properties Json     // [{ id, name, type: "text"|"number"|"select"|"checkbox"|"date", options?: [{id,label,color}] }]
+  views      Json     @default("[]") // [{ id, name, type: "table"|"kanban"|"calendar", groupByPropertyId? }]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  rows       CustomDatabaseRow[]
+}
+
+model CustomDatabaseRow {
+  id         String         @id @default(cuid())
+  databaseId String
+  database   CustomDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  values     Json           // { [propertyId]: value }
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([databaseId])
 }
 
 model PushSubscription {
@@ -443,6 +468,9 @@ model WorkspaceDoc {
   content   String   @default("")
   folder    String   @default("General")
   pinned    Boolean  @default(false)
+  parentId  String?
+  parent    WorkspaceDoc?  @relation("DocTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children  WorkspaceDoc[] @relation("DocTree")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
