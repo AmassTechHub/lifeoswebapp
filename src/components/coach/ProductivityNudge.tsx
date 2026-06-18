@@ -60,7 +60,7 @@ export function ProductivityNudge() {
   const colors = BORDER_BG[type];
 
   return (
-    <div className="fixed bottom-20 right-4 z-40 flex flex-col items-end gap-2">
+    <div className="fixed bottom-40 right-6 z-40 flex flex-col items-end gap-2 lg:bottom-42 lg:right-8">
       {open && (
         <div className={cn(
           "mb-1 w-72 rounded-2xl border p-4 shadow-xl backdrop-blur-sm animate-in slide-in-from-bottom-2 fade-in duration-200",

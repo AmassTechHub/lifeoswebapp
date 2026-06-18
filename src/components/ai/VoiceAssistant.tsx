@@ -158,7 +158,7 @@ export function VoiceAssistant() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-20 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200",
+          "fixed bottom-24 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 lg:bottom-26 lg:right-8",
           "bg-accent text-white hover:scale-105 hover:shadow-xl active:scale-95",
           open && "hidden"
         )}
