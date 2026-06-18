@@ -9,6 +9,7 @@ import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
 import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
 import { SmartActions } from "@/components/dashboard/SmartSystem";
 import { StudySnapshot } from "@/components/dashboard/StudySnapshot";
+import { TodaysClasses } from "@/components/dashboard/TodaysClasses";
 import { TodaysFocus } from "@/components/dashboard/TodaysFocus";
 import { TodaysSchedule } from "@/components/dashboard/TodaysSchedule";
 import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
@@ -81,13 +82,18 @@ export default async function DashboardPage() {
             <StaggerItem className="lg:col-span-2">
               <TodaysFocus items={data.focusItems} />
             </StaggerItem>
-            <StaggerItem>
-              <DailyScore
-                average={data.dailyScore.average}
-                scores={data.dailyScore.scores}
-                hasSnapshot={data.dailyScore.hasSnapshot}
-              />
-            </StaggerItem>
+            <div className="space-y-4">
+              <StaggerItem>
+                <DailyScore
+                  average={data.dailyScore.average}
+                  scores={data.dailyScore.scores}
+                  hasSnapshot={data.dailyScore.hasSnapshot}
+                />
+              </StaggerItem>
+              <StaggerItem>
+                <TodaysClasses courses={data.coursesToday} flashcardsDue={data.flashcardsDue} />
+              </StaggerItem>
+            </div>
           </StaggeredGrid>
         </section>
 

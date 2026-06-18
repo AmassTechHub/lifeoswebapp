@@ -212,7 +212,7 @@ export function YouTubePanel({ courseId }: { courseId: string }) {
         <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
           {/* Player */}
           {activeId && (
-            <div className="overflow-hidden rounded-2xl border border-border/60 bg-card">
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-border/60 bg-card">
               <div className="relative pb-[56.25%]">
                 <iframe
                   key={activeId}

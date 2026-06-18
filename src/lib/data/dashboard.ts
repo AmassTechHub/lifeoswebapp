@@ -2,6 +2,7 @@ import { computeDailyScore } from "@/lib/automation/daily-score";
 import { getUpcomingDeadlines, getTodaySchedule } from "@/lib/automation/generate-day";
 import { endOfDay, startOfDay, startOfMonth, startOfWeek } from "@/lib/date-utils";
 import { prisma } from "@/lib/prisma";
+import { getCoursesToday, getFlashcardsDueCount } from "@/lib/study/today";
 
 export async function getDashboardData(userId: string) {
   const now = new Date();
@@ -23,6 +24,8 @@ export async function getDashboardData(userId: string) {
     snapshot,
     schedule,
     deadlines,
+    coursesToday,
+    flashcardsDue,
   ] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -91,6 +94,8 @@ export async function getDashboardData(userId: string) {
     }),
     getTodaySchedule(userId),
     getUpcomingDeadlines(userId),
+    getCoursesToday(userId, now),
+    getFlashcardsDueCount(userId),
   ]);
 
   const habitsTotal = habits.length;
@@ -187,6 +192,8 @@ export async function getDashboardData(userId: string) {
     })),
     deadlines,
     dailyScore,
+    coursesToday,
+    flashcardsDue,
   };
 }
 

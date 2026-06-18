@@ -485,10 +485,10 @@ export function StudyHub({
 
           {/* Course detail */}
           {selected ? (
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
                 <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <p className="text-sm text-muted-foreground">{getStudyTip(selected)}</p>
+                <p className="min-w-0 flex-1 text-sm text-muted-foreground">{getStudyTip(selected)}</p>
               </div>
 
               <StudyBrainPanel courseId={selected.id} courseName={selected.name} />

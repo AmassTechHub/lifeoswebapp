@@ -97,7 +97,7 @@ export function ClientsPanel({ clients: initial }: { clients: Client[] }) {
         </Card>
 
         {selected ? (
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">{selected.name}</h2>
               <Button

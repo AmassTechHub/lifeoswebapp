@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Bell } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { pushSupported, subscribeToPush } from "@/lib/push/client";
@@ -32,8 +33,9 @@ export function NotificationPermissionPrompt() {
     setWorking(true);
     try {
       await subscribeToPush();
-    } catch {
-      // Permission denied or subscription failed — don't nag again this device
+      toast.success("Notifications enabled");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not enable notifications");
     } finally {
       setWorking(false);
       dismiss();

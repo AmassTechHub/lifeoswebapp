@@ -337,7 +337,7 @@ export function WorkspaceEditor({
       </div>
 
       {/* Editor */}
-      <Card className="border-border/70 bg-card/80">
+      <Card className="min-w-0 border-border/70 bg-card/80">
         {docs.length === 0 && (
           <CardContent className="py-16 text-center">
             <p className="text-sm text-muted-foreground">

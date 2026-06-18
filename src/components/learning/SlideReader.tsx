@@ -88,7 +88,7 @@ export function SlideReader({
       {selected ? (
         <div
           className={cn(
-            "flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/80",
+            "min-w-0 flex flex-col overflow-hidden rounded-2xl border border-border/70 bg-card/80",
             fullscreen && "fixed inset-4 z-50 shadow-2xl"
           )}
         >
