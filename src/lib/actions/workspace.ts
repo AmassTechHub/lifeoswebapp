@@ -4,13 +4,20 @@ import { revalidatePath } from "next/cache";
 
 import { requireUserId } from "@/lib/actions/auth";
 import { prisma } from "@/lib/prisma";
+import { WORKSPACE_TEMPLATES, type WorkspaceTemplateKey } from "@/lib/workspace-templates";
 
 export async function createWorkspaceDoc(formData: FormData) {
   const userId = await requireUserId();
   const title = String(formData.get("title") ?? "").trim();
   const folder = String(formData.get("folder") ?? "General").trim() || "General";
-  const content = String(formData.get("content") ?? "");
   const parentId = String(formData.get("parentId") ?? "").trim() || null;
+  const templateKey = String(formData.get("templateKey") ?? "blank") as WorkspaceTemplateKey;
+
+  let content = String(formData.get("content") ?? "");
+  if (!content) {
+    const template = WORKSPACE_TEMPLATES.find((t) => t.key === templateKey);
+    if (template?.content) content = JSON.stringify(template.content);
+  }
 
   if (!title) return { error: "Title required" };
 

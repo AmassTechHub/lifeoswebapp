@@ -24,9 +24,10 @@ model User {
   openAiKey  String? // stores Claude/Anthropic key (field name kept for compat)
 
   // AI usage tracking
-  isPro               Boolean  @default(false)
-  aiMessagesUsedToday Int      @default(0)
-  aiResetDate         DateTime @default(now())
+  isPro               Boolean   @default(false)
+  proExpiresAt        DateTime? // null + isPro=true means "Pro forever" (e.g. manually granted)
+  aiMessagesUsedToday Int       @default(0)
+  aiResetDate         DateTime  @default(now())
   aiUsageLogs         AIUsageLog[]
 
   // MoMo integration
@@ -35,7 +36,8 @@ model User {
   momoApiSecret       String? // API secret generated from MTN sandbox
   momoEnvironment     String? @default("sandbox") // "sandbox" | "production"
 
-  momoTransactions MoMoTransaction[]
+  momoTransactions    MoMoTransaction[]
+  paymentTransactions PaymentTransaction[]
 
   budgetCategories BudgetCategory[]
   savingsGoals     SavingsGoal[]
@@ -108,6 +110,21 @@ model PushSubscription {
   p256dh    String
   auth      String
   createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model PaymentTransaction {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reference String   @unique // Paystack transaction reference
+  amount    Int      // smallest currency unit (pesewas for GHS)
+  currency  String   @default("GHS")
+  plan      String   // "pro_monthly" | "pro_yearly"
+  status    String   @default("pending") // pending | success | failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }

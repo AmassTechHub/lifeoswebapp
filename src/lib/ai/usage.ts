@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { isUserPro } from "@/lib/billing/plans";
 import { FREE_DAILY_LIMIT } from "./claude";
 
 function isToday(date: Date): boolean {
@@ -19,12 +20,12 @@ export async function checkAndIncrementUsage(userId: string): Promise<{
 }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isPro: true, aiMessagesUsedToday: true, aiResetDate: true },
+    select: { isPro: true, proExpiresAt: true, aiMessagesUsedToday: true, aiResetDate: true },
   });
 
   if (!user) return { allowed: false, usedToday: 0, remaining: 0, limit: FREE_DAILY_LIMIT, isPro: false };
 
-  const isPro = user.isPro ?? false;
+  const isPro = isUserPro(user);
   if (isPro) {
     await prisma.user.update({
       where: { id: userId },
@@ -70,7 +71,7 @@ export async function checkAndIncrementUsage(userId: string): Promise<{
 export async function getUsageStats(userId: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { isPro: true, aiMessagesUsedToday: true, aiResetDate: true },
+    select: { isPro: true, proExpiresAt: true, aiMessagesUsedToday: true, aiResetDate: true },
   });
 
   const sevenDaysAgo = new Date();
@@ -95,7 +96,7 @@ export async function getUsageStats(userId: string) {
 
   const needsReset = !user?.aiResetDate || !isToday(new Date(user.aiResetDate ?? 0));
   const usedToday = needsReset ? 0 : (user?.aiMessagesUsedToday ?? 0);
-  const isPro = user?.isPro ?? false;
+  const isPro = user ? isUserPro(user) : false;
 
   return {
     isPro,

@@ -4,12 +4,26 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Database as DatabaseIcon, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  BookOpen, CalendarDays, CheckSquare, Database as DatabaseIcon,
+  Loader2, Plus, Repeat, Table as TableIcon, Trash2, Users,
+} from "lucide-react";
 
-import { createDatabase, deleteDatabase } from "@/lib/actions/database";
+import { createDatabase, deleteDatabase, type DatabaseTemplateKey } from "@/lib/actions/database";
+import { DATABASE_TEMPLATES } from "@/lib/database-templates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+const TEMPLATE_ICONS: Record<string, typeof TableIcon> = {
+  Table: TableIcon,
+  CheckSquare,
+  BookOpen,
+  Repeat,
+  CalendarDays,
+  Users,
+};
 
 type DatabaseSummary = {
   id: string;
@@ -22,12 +36,13 @@ export function DatabaseList({ databases }: { databases: DatabaseSummary[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [name, setName] = useState("");
+  const [templateKey, setTemplateKey] = useState<DatabaseTemplateKey>("tasks");
 
   function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
     startTransition(async () => {
-      const res = await createDatabase(name);
+      const res = await createDatabase(name, templateKey);
       if (res.error) { toast.error(res.error); return; }
       toast.success("Database created");
       setName("");
@@ -41,7 +56,29 @@ export function DatabaseList({ databases }: { databases: DatabaseSummary[] }) {
         <CardHeader>
           <CardTitle className="text-base">New database</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {DATABASE_TEMPLATES.map((t) => {
+              const Icon = TEMPLATE_ICONS[t.icon] ?? TableIcon;
+              return (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setTemplateKey(t.key)}
+                  title={t.description}
+                  className={cn(
+                    "flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm transition-colors",
+                    templateKey === t.key
+                      ? "border-accent/50 bg-accent/10 text-foreground"
+                      : "border-border/60 text-muted-foreground hover:border-accent/30 hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate font-medium">{t.label}</span>
+                </button>
+              );
+            })}
+          </div>
           <form onSubmit={handleCreate} className="flex gap-2">
             <Input
               value={name}

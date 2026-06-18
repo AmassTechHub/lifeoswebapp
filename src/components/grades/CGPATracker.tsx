@@ -27,13 +27,14 @@ type Grade = {
 
 type ViewMode = "wa" | "gpa";
 
+type ImprovementTarget = { score: number; grade: string; gain: number };
+
 type ImprovementRow = {
   name: string;
   code: string | null;
   credits: number;
   currentScore: number;
-  target65: number;
-  target70: number;
+  targets: ImprovementTarget[];
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -190,6 +191,7 @@ export function CGPATracker({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          systemKey: system.key,
           currentCWA: wa,
           creditsCompleted: credsDone,
           grades: grades.map((g) => ({ name: g.name, code: g.code, score: g.score, grade: g.grade, credits: g.credits })),
@@ -453,16 +455,19 @@ export function CGPATracker({
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                          {row.target65 > 0 && (
-                            <span className="rounded-md bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
-                              65% → +{row.target65}
+                          {row.targets.map((t, i) => (
+                            <span
+                              key={t.score}
+                              className={cn(
+                                "rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+                                i === row.targets.length - 1
+                                  ? "bg-success/10 text-success"
+                                  : "bg-warning/10 text-warning"
+                              )}
+                            >
+                              {t.score}% → +{t.gain}
                             </span>
-                          )}
-                          {row.target70 > 0 && (
-                            <span className="rounded-md bg-success/10 px-1.5 py-0.5 text-[11px] font-medium text-success">
-                              70% → +{row.target70}
-                            </span>
-                          )}
+                          ))}
                         </div>
                       </div>
                     ))}

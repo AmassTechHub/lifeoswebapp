@@ -1,7 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  Background, Controls, Handle, MiniMap, Position, ReactFlow,
+  type Edge, type Node, type NodeProps,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 import {
   BookOpen, Brain, Check, CheckCircle2, ChevronDown, ChevronRight,
   FileText, GraduationCap, Headphones, Loader2, MessageCircle, Network,
@@ -832,40 +837,97 @@ function StudyGuideView({ data, sources }: { data: StudyGuideData; sources: Stud
   );
 }
 
-// ── Mind Map ─────────────────────────────────────────────────────────────────
+// ── Mind Map (interactive node graph) ───────────────────────────────────────
 
-function MindMapBranch({ node, depth }: { node: MindMapNode; depth: number }) {
-  const colors = ["text-fuchsia-400", "text-purple-400", "text-blue-400"];
+const MIND_NODE_COLORS = [
+  { border: "border-fuchsia-500/50", bg: "bg-fuchsia-500/10", text: "text-fuchsia-300" },
+  { border: "border-purple-500/40", bg: "bg-purple-500/10", text: "text-purple-300" },
+  { border: "border-blue-500/40", bg: "bg-blue-500/10", text: "text-blue-300" },
+  { border: "border-cyan-500/40", bg: "bg-cyan-500/10", text: "text-cyan-300" },
+];
+
+function MindFlowNode({ data }: NodeProps) {
+  const depth = (data as { depth: number }).depth;
+  const label = (data as { label: string }).label;
+  const root = depth === 0;
+  const colors = MIND_NODE_COLORS[Math.min(depth, MIND_NODE_COLORS.length - 1)];
   return (
-    <div className={cn(depth > 0 && "ml-4 border-l border-border/50 pl-4")}>
-      <p className={cn("py-1 text-sm font-semibold", colors[Math.min(depth, colors.length - 1)])}>
-        {node.label}
-      </p>
-      {node.children && node.children.length > 0 && (
-        <div>
-          {node.children.map((child, i) => (
-            <MindMapBranch key={i} node={child} depth={depth + 1} />
-          ))}
-        </div>
+    <div
+      className={cn(
+        "rounded-xl border px-3.5 py-2 text-center shadow-sm backdrop-blur-sm",
+        colors.border, colors.bg,
+        root && "px-5 py-3 text-base font-bold shadow-md"
       )}
+      style={{ maxWidth: root ? 220 : 180 }}
+    >
+      {!root && <Handle type="target" position={Position.Left} className="!bg-muted-foreground/40" />}
+      <p className={cn("text-sm font-semibold leading-snug", colors.text, root && "text-foreground")}>
+        {label}
+      </p>
+      <Handle type="source" position={Position.Right} className="!bg-muted-foreground/40" />
     </div>
   );
 }
 
+const MIND_NODE_TYPES = { mindNode: MindFlowNode };
+
+function layoutMindMap(data: MindMapData): { nodes: Node[]; edges: Edge[] } {
+  const X_GAP = 230;
+  const Y_GAP = 56;
+  let leafCounter = 0;
+  let nodeCounter = 0;
+  const nodes: Node[] = [];
+  const edges: Edge[] = [];
+
+  function visit(label: string, children: MindMapNode[] | undefined, depth: number, parentId: string | null): number {
+    const id = `n${nodeCounter++}`;
+    let y: number;
+    if (!children || children.length === 0) {
+      y = leafCounter * Y_GAP;
+      leafCounter++;
+    } else {
+      const ys = children.map((c) => visit(c.label, c.children, depth + 1, id));
+      y = (Math.min(...ys) + Math.max(...ys)) / 2;
+    }
+    nodes.push({
+      id,
+      type: "mindNode",
+      position: { x: depth * X_GAP, y },
+      data: { label, depth },
+      draggable: true,
+    });
+    if (parentId) {
+      edges.push({
+        id: `${parentId}-${id}`,
+        source: parentId,
+        target: id,
+        style: { stroke: "var(--border)", strokeWidth: 1.5 },
+      });
+    }
+    return y;
+  }
+
+  visit(data.root, data.children, 0, null);
+  return { nodes, edges };
+}
+
 function MindMapView({ data }: { data: MindMapData }) {
+  const { nodes, edges } = useMemo(() => layoutMindMap(data), [data]);
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-fuchsia-500/20 bg-fuchsia-500/5 px-4 py-3 text-center">
-        <Network className="mx-auto mb-1 h-5 w-5 text-fuchsia-400" />
-        <p className="text-lg font-bold text-foreground">{data.root}</p>
-      </div>
-      <Card className="border-border/70 bg-card/80">
-        <CardContent className="space-y-1 pt-5">
-          {data.children.map((branch, i) => (
-            <MindMapBranch key={i} node={branch} depth={0} />
-          ))}
-        </CardContent>
-      </Card>
+    <div className="h-[560px] overflow-hidden rounded-2xl border border-border/70 bg-card/60">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={MIND_NODE_TYPES}
+        fitView
+        fitViewOptions={{ padding: 0.2 }}
+        proOptions={{ hideAttribution: true }}
+        minZoom={0.3}
+      >
+        <Background gap={20} size={1} />
+        <Controls showInteractive={false} />
+        <MiniMap pannable zoomable className="!bg-card/80" />
+      </ReactFlow>
     </div>
   );
 }

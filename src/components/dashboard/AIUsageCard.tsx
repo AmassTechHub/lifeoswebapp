@@ -166,13 +166,12 @@ export function AIUsageCard() {
               <p className="text-xs font-semibold text-foreground">Upgrade to Pro</p>
               <p className="text-[10px] text-muted-foreground">Unlimited · Sonnet 4.6 · Priority</p>
             </div>
-            <button
-              type="button"
+            <Link
+              href="/billing"
               className="rounded-lg bg-accent/15 px-3 py-1.5 text-[11px] font-semibold text-accent hover:bg-accent/25 transition-colors"
-              onClick={() => alert("Pro subscriptions coming soon!")}
             >
               Upgrade
-            </button>
+            </Link>
           </div>
         )}
       </div>

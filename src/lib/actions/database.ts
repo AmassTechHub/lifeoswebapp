@@ -5,47 +5,20 @@ import type { Prisma } from "@prisma/client";
 
 import { requireUserId } from "@/lib/actions/auth";
 import { prisma } from "@/lib/prisma";
+import {
+  DATABASE_TEMPLATES, newId, colorFor,
+  type Property, type PropertyOption, type PropertyType, type View, type ViewType, type DatabaseTemplateKey,
+} from "@/lib/database-templates";
 
-export type PropertyType = "text" | "number" | "select" | "checkbox" | "date";
-export type PropertyOption = { id: string; label: string; color: string };
-export type Property = { id: string; name: string; type: PropertyType; options?: PropertyOption[] };
-export type ViewType = "table" | "kanban" | "calendar";
-export type View = { id: string; name: string; type: ViewType; groupByPropertyId?: string };
+export type { Property, PropertyOption, PropertyType, View, ViewType, DatabaseTemplateKey };
 
-const OPTION_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4", "#ec4899", "#84cc16"];
-
-function newId(prefix: string) {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function colorFor(index: number) {
-  return OPTION_COLORS[index % OPTION_COLORS.length];
-}
-
-export async function createDatabase(name: string) {
+export async function createDatabase(name: string, templateKey: DatabaseTemplateKey = "tasks") {
   const userId = await requireUserId();
   const trimmed = name.trim();
   if (!trimmed) return { error: "Name required" };
 
-  const nameProp: Property = { id: newId("prop"), name: "Name", type: "text" };
-  const statusProp: Property = {
-    id: newId("prop"),
-    name: "Status",
-    type: "select",
-    options: [
-      { id: newId("opt"), label: "Todo", color: colorFor(0) },
-      { id: newId("opt"), label: "In Progress", color: colorFor(2) },
-      { id: newId("opt"), label: "Done", color: colorFor(1) },
-    ],
-  };
-  const dateProp: Property = { id: newId("prop"), name: "Date", type: "date" };
-  const properties: Property[] = [nameProp, statusProp, dateProp];
-
-  const views: View[] = [
-    { id: newId("view"), name: "Table", type: "table" },
-    { id: newId("view"), name: "Board", type: "kanban", groupByPropertyId: statusProp.id },
-    { id: newId("view"), name: "Calendar", type: "calendar", groupByPropertyId: dateProp.id },
-  ];
+  const template = DATABASE_TEMPLATES.find((t) => t.key === templateKey) ?? DATABASE_TEMPLATES[1];
+  const { properties, views } = template.build();
 
   const db = await prisma.customDatabase.create({
     data: { userId, name: trimmed, properties, views },

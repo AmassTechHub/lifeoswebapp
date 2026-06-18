@@ -38,6 +38,7 @@ import {
   deleteWorkspaceDoc,
   updateWorkspaceDoc,
 } from "@/lib/actions/workspace";
+import { WORKSPACE_TEMPLATES } from "@/lib/workspace-templates";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -305,6 +306,18 @@ export function WorkspaceEditor({
                     <option key={f} value={f} />
                   ))}
                 </datalist>
+              </div>
+              <div>
+                <Label>Template</Label>
+                <select
+                  name="templateKey"
+                  defaultValue="blank"
+                  className="mt-1 h-9 w-full rounded-lg border border-border bg-background px-2 text-sm"
+                >
+                  {WORKSPACE_TEMPLATES.map((t) => (
+                    <option key={t.key} value={t.key}>{t.label}</option>
+                  ))}
+                </select>
               </div>
               <Button type="submit" disabled={pending} className="w-full gap-1">
                 {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
