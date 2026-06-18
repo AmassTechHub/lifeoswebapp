@@ -57,18 +57,18 @@ export function QuickAdd() {
         type="button"
         onClick={() => { setOpen((v) => !v); setMode(null); }}
         className={cn(
-          "fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-200",
+          "fixed bottom-6 right-6 z-50 flex h-11 w-11 items-center justify-center rounded-full shadow-lg transition-all duration-200",
           "bg-accent text-white hover:bg-accent/90 hover:shadow-xl active:scale-95",
           "lg:bottom-8 lg:right-8"
         )}
         aria-label="Quick add"
       >
-        <Plus className={cn("h-6 w-6 transition-transform duration-200", open && "rotate-45")} />
+        <Plus className={cn("h-5 w-5 transition-transform duration-200", open && "rotate-45")} />
       </button>
 
       {/* Quick action panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-72 lg:right-8">
+        <div className="fixed bottom-20 right-6 z-50 w-72 lg:bottom-22 lg:right-8">
           {mode === null ? (
             /* Mode chooser */
             <div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xl">

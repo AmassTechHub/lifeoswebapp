@@ -26,14 +26,14 @@ export type AcademicClass = {
 const KNUST_SYSTEM: GradingSystem = {
   key: "knust",
   label: "KNUST / Commonwealth",
-  description: "80=A, 75=B+, 70=B… | First Class ≥70%",
+  description: "70=A, 65=B+, 60=B… | First Class ≥70%",
   grades: { "A": 4.0, "B+": 3.5, "B": 3.0, "C+": 2.5, "C": 2.0, "D+": 1.5, "D": 1.0, "F": 0.0 },
   scoreRanges: [
-    { min: 80, grade: "A" }, { min: 75, grade: "B+" }, { min: 70, grade: "B" },
-    { min: 65, grade: "C+" }, { min: 60, grade: "C" }, { min: 55, grade: "D+" },
-    { min: 50, grade: "D" }, { min: 0, grade: "F" },
+    { min: 70, grade: "A" }, { min: 65, grade: "B+" }, { min: 60, grade: "B" },
+    { min: 55, grade: "C+" }, { min: 50, grade: "C" }, { min: 45, grade: "D+" },
+    { min: 40, grade: "D" }, { min: 0, grade: "F" },
   ],
-  midpoints: { "A": 85, "B+": 77, "B": 72, "C+": 67, "C": 62, "D+": 57, "D": 52, "F": 25 },
+  midpoints: { "A": 75, "B+": 67, "B": 62, "C+": 57, "C": 52, "D+": 47, "D": 42, "F": 20 },
   classifications: [
     { label: "First Class",        cwaMin: 70, gpaMin: 3.5, color: "text-success",         bgColor: "bg-success/10" },
     { label: "Second Class Upper", cwaMin: 60, gpaMin: 3.0, color: "text-accent",           bgColor: "bg-accent/10" },

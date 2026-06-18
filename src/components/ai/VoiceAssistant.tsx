@@ -158,14 +158,14 @@ export function VoiceAssistant() {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed bottom-24 right-6 z-40 flex h-12 w-12 items-center justify-center rounded-full shadow-lg transition-all duration-200 lg:bottom-26 lg:right-8",
+          "fixed bottom-20 right-6 z-40 flex h-9 w-9 items-center justify-center rounded-full shadow-lg transition-all duration-200 lg:bottom-22 lg:right-8",
           "bg-accent text-white hover:scale-105 hover:shadow-xl active:scale-95",
           open && "hidden"
         )}
         aria-label="Open voice assistant"
         title="Voice Assistant (AI)"
       >
-        <Mic className="h-5 w-5" />
+        <Mic className="h-4 w-4" />
       </button>
 
       {/* Panel */}

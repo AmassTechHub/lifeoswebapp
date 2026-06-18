@@ -32,8 +32,8 @@ type ImprovementRow = {
   code: string | null;
   credits: number;
   currentScore: number;
-  target75: number;
-  target80: number;
+  target65: number;
+  target70: number;
 };
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -453,14 +453,14 @@ export function CGPATracker({
                           </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
-                          {row.target75 > 0 && (
+                          {row.target65 > 0 && (
                             <span className="rounded-md bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
-                              75% → +{row.target75}
+                              65% → +{row.target65}
                             </span>
                           )}
-                          {row.target80 > 0 && (
+                          {row.target70 > 0 && (
                             <span className="rounded-md bg-success/10 px-1.5 py-0.5 text-[11px] font-medium text-success">
-                              80% → +{row.target80}
+                              70% → +{row.target70}
                             </span>
                           )}
                         </div>

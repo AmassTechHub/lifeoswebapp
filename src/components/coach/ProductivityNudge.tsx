@@ -60,7 +60,7 @@ export function ProductivityNudge() {
   const colors = BORDER_BG[type];
 
   return (
-    <div className="fixed bottom-40 right-6 z-40 flex flex-col items-end gap-2 lg:bottom-42 lg:right-8">
+    <div className="fixed bottom-32 right-6 z-40 flex flex-col items-end gap-2 lg:bottom-34 lg:right-8">
       {open && (
         <div className={cn(
           "mb-1 w-72 rounded-2xl border p-4 shadow-xl backdrop-blur-sm animate-in slide-in-from-bottom-2 fade-in duration-200",
@@ -99,12 +99,12 @@ export function ProductivityNudge() {
         onClick={() => setOpen((v) => !v)}
         aria-label="Productivity nudge"
         className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-full border shadow-lg transition-all hover:scale-105",
+          "flex h-9 w-9 items-center justify-center rounded-full border shadow-lg transition-all hover:scale-105",
           colors,
           pulse && !open && "animate-pulse",
         )}
       >
-        <Bell className="h-5 w-5" />
+        <Bell className="h-4 w-4" />
       </button>
     </div>
   );

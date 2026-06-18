@@ -19,12 +19,12 @@ export type ImprovementRow = {
   code: string | null;
   credits: number;
   currentScore: number;
-  target75: number;
-  target80: number;
+  target65: number;
+  target70: number;
 };
 
 const MIDPOINTS: Record<string, number> = {
-  A: 85, "B+": 77, B: 72, "C+": 67, C: 62, "D+": 57, D: 52, F: 25,
+  A: 75, "B+": 67, B: 62, "C+": 57, C: 52, "D+": 47, D: 42, F: 20,
 };
 
 function cwaClass(cwa: number): string {
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
 
   // Pre-compute per-course CWA improvement scenarios server-side
   const improvements: ImprovementRow[] = grades
-    .filter((g) => (g.score ?? MIDPOINTS[g.grade] ?? 50) < 80)
+    .filter((g) => (g.score ?? MIDPOINTS[g.grade] ?? 50) < 70)
     .map((g) => {
       const cs = g.score ?? MIDPOINTS[g.grade] ?? 50;
       const cwaDelta = (toScore: number) =>
@@ -77,12 +77,12 @@ export async function POST(req: Request) {
         code: g.code ?? null,
         credits: g.credits,
         currentScore: Math.round(cs * 10) / 10,
-        target75: cs < 75 ? cwaDelta(75) : 0,
-        target80: cs < 80 ? cwaDelta(80) : 0,
+        target65: cs < 65 ? cwaDelta(65) : 0,
+        target70: cs < 70 ? cwaDelta(70) : 0,
       };
     })
-    .filter((r) => r.target80 > 0 || r.target75 > 0)
-    .sort((a, b) => b.target80 - a.target80);
+    .filter((r) => r.target70 > 0 || r.target65 > 0)
+    .sort((a, b) => b.target70 - a.target70);
 
   const gradeLines = grades
     .map((g) =>
@@ -94,8 +94,8 @@ export async function POST(req: Request) {
     .slice(0, 6)
     .map((r) => {
       const parts: string[] = [];
-      if (r.target75 > 0) parts.push(`to 75% → +${r.target75} CWA pts`);
-      if (r.target80 > 0) parts.push(`to 80% → +${r.target80} CWA pts`);
+      if (r.target65 > 0) parts.push(`to 65% → +${r.target65} CWA pts`);
+      if (r.target70 > 0) parts.push(`to 70% → +${r.target70} CWA pts`);
       return `• ${r.name} (now ${r.currentScore}%, ${r.credits}cr): ${parts.join(" | ")}`;
     })
     .join("\n");
@@ -114,7 +114,7 @@ Structure your response in exactly 4 short sections with **bold** headers:
 One sentence: current classification and how many CWA points away from the next tier.
 
 **Priority Courses**
-Name the top 2–3 courses to focus on. For each: state current score, target score (75% or 80%), and exactly how many CWA points they gain (use the pre-calculated data). Higher-credit courses first.
+Name the top 2–3 courses to focus on. For each: state current score, target score (65% or 70%), and exactly how many CWA points they gain (use the pre-calculated data). Higher-credit courses first.
 
 **How to Improve**
 2–3 concrete, actionable tactics for the specific weak courses above. Not generic advice — course-specific strategies.
@@ -139,7 +139,7 @@ Course grades:
 ${gradeLines || "No courses added yet."}
 
 CWA impact per course (server-pre-calculated — use these exact numbers):
-${topImprovements || "All courses already at 80%+ — excellent!"}`,
+${topImprovements || "All courses already at 70%+ — excellent!"}`,
         },
       ],
       maxTokens: 650,
