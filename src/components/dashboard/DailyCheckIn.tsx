@@ -1,16 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 const ENERGY_LABELS = ["", "Drained", "Low", "Okay", "Good", "Energized"];
 const ENERGY_EMOJIS = ["", "😴", "😔", "😐", "😊", "💪"];
 
 export function DailyCheckIn() {
+  const router = useRouter();
   const [done, setDone] = useState<boolean | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [energy, setEnergy] = useState(0);
@@ -33,9 +35,15 @@ export function DailyCheckIn() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ energyLevel: energy, topPriority: priority }),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         setDone(true);
-        toast.success("Check-in saved! +5 XP. Have a great day.");
+        toast.success(
+          data.plan
+            ? "Today's plan is ready — built around what you're focused on. +5 XP"
+            : "Check-in saved! +5 XP. Have a great day."
+        );
+        router.refresh();
       } else {
         toast.error("Could not save check-in");
       }
@@ -83,16 +91,21 @@ export function DailyCheckIn() {
         ))}
       </div>
 
-      <Input
-        value={priority}
-        onChange={(e) => setPriority(e.target.value)}
-        placeholder="#1 priority for today (e.g. finish DSA assignment)"
-        className="bg-card/50"
-        onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-      />
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-muted-foreground">
+          What are you focused on today? Be as specific as you like — your studies, a project, exam prep, anything.
+        </label>
+        <Textarea
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          placeholder="e.g. Prepping for the Computer Architecture exam, finishing my mini project, and reviewing flashcards"
+          rows={2}
+          className="resize-none bg-card/50"
+        />
+      </div>
 
       <Button className="w-full" onClick={handleSubmit} disabled={submitting || !energy}>
-        {submitting ? "Saving..." : "Start my day →"}
+        {submitting ? "Building your day…" : "Start my day →"}
       </Button>
     </div>
   );
