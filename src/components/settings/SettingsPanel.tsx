@@ -531,7 +531,7 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
             <CardTitle>AI Coach</CardTitle>
           </div>
           <CardDescription>
-            Connect your Claude API key to unlock the full AI Coach, daily briefs, and smart coaching. Get one free at console.anthropic.com.
+            The AI Coach, daily briefs, and smart coaching already work out of the box — no setup needed. Adding your own Claude API key here is optional: it lifts the free daily message limit and lets you use your own Anthropic billing instead of the shared one. Get a free key at console.anthropic.com if you want that.
           </CardDescription>
         </CardHeader>
         <CardContent>
