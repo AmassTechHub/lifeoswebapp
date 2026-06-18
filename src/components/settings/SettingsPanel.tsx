@@ -395,8 +395,9 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
   async function handleSignOut() {
     setLoggingOut(true);
     await authClient.signOut();
-    router.push("/");
-    router.refresh();
+    // Hard navigation — discards client-side router cache so the next user
+    // to sign in on this device can never see this account's cached pages.
+    window.location.href = "/";
   }
 
   async function handleSaveApiKey(e: React.FormEvent) {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
 
@@ -38,8 +37,10 @@ function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
-    router.refresh();
+    // Hard navigation, not router.push — discards any client-side cache left
+    // over from a previous account in this browser tab (prevents cross-account
+    // data bleed via the Next.js router cache).
+    window.location.href = "/dashboard";
   }
 
   return (

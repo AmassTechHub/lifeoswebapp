@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { LogOut, Moon, Sun } from "lucide-react";
 import { useState } from "react";
 import { useTheme } from "@/components/theme/ThemeProvider";
@@ -18,7 +18,6 @@ interface AppSidebarProps {
 
 export function AppSidebar({ isOpen = false, onClose }: AppSidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { theme, toggleTheme } = useTheme();
   const { data: session, isPending } = authClient.useSession();
   const [signingOut, setSigningOut] = useState(false);
@@ -29,8 +28,9 @@ export function AppSidebar({ isOpen = false, onClose }: AppSidebarProps) {
   async function handleSignOut() {
     setSigningOut(true);
     await authClient.signOut();
-    router.push("/");
-    router.refresh();
+    // Hard navigation — discards client-side router cache so the next user
+    // to sign in on this device can never see this account's cached pages.
+    window.location.href = "/";
   }
 
   function isActive(href: string) {
