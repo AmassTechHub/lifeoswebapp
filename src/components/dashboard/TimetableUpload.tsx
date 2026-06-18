@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Calendar, Check, FileUp, Loader2, Sparkles, Upload, Users } from "lucide-react";
+import { Calendar, Check, FileUp, Loader2, Upload, Users } from "lucide-react";
 
 import { TimetableBlockEditor } from "@/components/dashboard/TimetableBlockEditor";
 import { TimetableWeekPreview } from "@/components/dashboard/TimetableWeekPreview";
@@ -226,38 +226,6 @@ export function TimetableUpload() {
               </span>
               <span className="mt-1 text-xs text-muted-foreground">PNG, JPG, PDF up to 8MB</span>
             </button>
-
-            {/* Quick setup for KNUST */}
-            {!applied && (
-              <button
-                type="button"
-                onClick={async () => {
-                  setProcessing(true);
-                  try {
-                    const res = await fetch("/api/setup/courses", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ courses: await fetch("/api/setup/courses").then(r => r.json()).then(d => d.preset.courses), group: 1 }),
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                      setApplied(true);
-                      setMessage(`Quick setup complete: ${data.coursesCreated} KNUST CS3 courses added, ${data.generatedEvents} class events scheduled.`);
-                      toast.success("KNUST CS3 timetable applied!");
-                      router.refresh();
-                    }
-                  } catch {
-                    toast.error("Quick setup failed");
-                  } finally {
-                    setProcessing(false);
-                  }
-                }}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent/5 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
-              >
-                <Sparkles className="h-4 w-4" />
-                KNUST CS3 Quick Setup
-              </button>
-            )}
 
             {previewing && blocks.length > 0 && (
               <div className="mt-4 space-y-4 rounded-xl border border-border/70 bg-background/60 p-4">
