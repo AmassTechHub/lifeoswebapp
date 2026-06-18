@@ -1,0 +1,28 @@
+name: Notification check
+
+# Vercel's Hobby plan only runs cron jobs once a day, which is too slow for
+# "alert me when it's time" notifications. This workflow pings the check
+# endpoint every 5 minutes instead — free and unlimited since this repo is
+# public. Requires a CRON_SECRET repository secret matching the one in the
+# app's environment variables (Settings -> Secrets and variables -> Actions).
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/notifications/check
+        run: |
+          status=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X POST "https://lifeoswebapp.vercel.app/api/notifications/check" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          echo "HTTP status: $status"
+          cat /tmp/response.json
+          if [ "$status" -ge 300 ]; then
+            echo "Notification check failed with status $status"
+            exit 1
+          fi

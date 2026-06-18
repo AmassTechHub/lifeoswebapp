@@ -866,8 +866,8 @@ export function FinancePanel({
               <p className="text-sm text-muted-foreground">
                 Found <strong>{csvRows.length}</strong> transactions. Edit categories if needed.
               </p>
-              <div className="max-h-72 overflow-y-auto rounded-lg border border-border">
-                <table className="w-full text-sm">
+              <div className="max-h-72 overflow-x-auto overflow-y-auto rounded-lg border border-border">
+                <table className="w-full min-w-130 text-sm">
                   <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm">
                     <tr>
                       <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Date</th>

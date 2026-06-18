@@ -568,9 +568,9 @@ function AddViewForm({
         e.preventDefault();
         onSubmit(name || type, type, groupBy || undefined);
       }}
-      className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-card px-2 py-1"
+      className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/60 bg-card px-2 py-1.5"
     >
-      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="View name" className="h-7 w-28 text-xs" />
+      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="View name" className="h-7 w-24 text-xs" />
       <select value={type} onChange={(e) => setType(e.target.value as View["type"])} className="rounded border border-border bg-background px-1.5 py-1 text-xs">
         <option value="table">Table</option>
         <option value="kanban">Board</option>

@@ -385,16 +385,16 @@ export function StudyHub({
       {/* Timetable tab shows all courses — no course selection needed */}
       {tab === "timetable" ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold">Weekly Timetable</h2>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
               {TABS.map(({ key, label, Icon }) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => setTab(key)}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     tab === key
                       ? "bg-accent text-white"
                       : "bg-muted text-muted-foreground hover:text-foreground"
@@ -528,14 +528,14 @@ export function StudyHub({
               </div>
 
               {/* Tabs */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {TABS.map(({ key, label, Icon, badge }) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => setTab(key)}
                     className={cn(
-                      "inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                       tab === key
                         ? "bg-accent text-white"
                         : "bg-muted text-muted-foreground hover:text-foreground"
