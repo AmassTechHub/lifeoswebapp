@@ -105,7 +105,7 @@ export function YouTubePanel({ courseId }: { courseId: string }) {
     <div className="space-y-4">
       {/* Search bar */}
       <div className="flex gap-2">
-        <div className="relative flex-1">
+        <div className="relative min-w-0 flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
             value={searchQuery}
@@ -119,7 +119,7 @@ export function YouTubePanel({ courseId }: { courseId: string }) {
           type="button"
           onClick={handleSearch}
           disabled={!searchQuery.trim() || searching}
-          className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-accent/30 hover:text-foreground disabled:opacity-40"
+          className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-accent/30 hover:text-foreground disabled:opacity-40"
         >
           {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Youtube className="h-4 w-4 text-red-500" />}
           Search
@@ -173,25 +173,25 @@ export function YouTubePanel({ courseId }: { courseId: string }) {
       {/* Add by URL */}
       <div className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-2">
         <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground/50">Paste a URL</p>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={urlInput}
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleAddByUrl()}
             placeholder="https://youtube.com/watch?v=…"
-            className="h-8 flex-1 rounded-lg border border-border/60 bg-background/60 px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent/15"
+            className="h-8 min-w-0 rounded-lg border border-border/60 bg-background/60 px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent/15 sm:flex-1"
           />
           <input
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
             placeholder="Label (optional)"
-            className="h-8 w-36 rounded-lg border border-border/60 bg-background/60 px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent/15"
+            className="h-8 min-w-0 rounded-lg border border-border/60 bg-background/60 px-3 text-sm outline-none placeholder:text-muted-foreground/40 focus:border-accent focus:ring-1 focus:ring-accent/15 sm:w-36"
           />
           <button
             type="button"
             onClick={handleAddByUrl}
             disabled={!urlInput.trim()}
-            className="flex items-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-opacity disabled:opacity-40 hover:opacity-90"
+            className="flex shrink-0 items-center justify-center gap-1 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-opacity disabled:opacity-40 hover:opacity-90"
           >
             Add
           </button>

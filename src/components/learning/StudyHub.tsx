@@ -315,16 +315,18 @@ export function StudyHub({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-4 sm:p-5">
-        <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-        <div className="flex-1">
-          <p className="font-semibold text-foreground">Study Hub</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Notes, summaries, slides, flashcards and your personal timetable. All in one place.
-          </p>
+      <div className="flex flex-col gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-4 sm:flex-row sm:items-start sm:p-5">
+        <div className="flex items-start gap-3">
+          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
+          <div className="flex-1">
+            <p className="font-semibold text-foreground">Study Hub</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Notes, summaries, slides, flashcards and your personal timetable. All in one place.
+            </p>
+          </div>
         </div>
         {courses.length > 0 && (
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
               type="button"
               onClick={handleGenerateStudyPlan}
