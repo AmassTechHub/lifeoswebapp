@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:studio": "prisma studio",
+    "db:reset": "node scripts/reset-db.mjs",
     "clay:optimize": "node scripts/optimize-clay.mjs"
   },
   "dependencies": {

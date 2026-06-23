@@ -29,14 +29,14 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
+  // Dark-first: dark is the primary, polished experience and the default for
+  // anyone who hasn't explicitly chosen a theme.
+  const [theme, setThemeState] = useState<Theme>("dark");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    const initial: Theme =
-      stored === "light" || stored === "dark" ? stored : prefersDark ? "dark" : "light";
+    const initial: Theme = stored === "light" || stored === "dark" ? stored : "dark";
     setThemeState(initial);
     applyTheme(initial);
     setMounted(true);

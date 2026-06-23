@@ -8,7 +8,6 @@ An AI-powered Personal Operating System for ambitious students, creators, founde
 
 > *Every day, Life OS should help you know exactly what matters most and help you execute it.*
 
-**First user:** Theophilus Amankwah  
 **Platform:** Web app (Next.js) — mobile comes later
 
 ---

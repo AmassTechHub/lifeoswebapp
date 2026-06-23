@@ -2,6 +2,7 @@ import { getSessionCookie } from "better-auth/cookies";
 import { NextRequest, NextResponse } from "next/server";
 
 const protectedPrefixes = [
+  "/onboarding",
   "/dashboard",
   "/focus",
   "/goals",
@@ -47,6 +48,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/onboarding/:path*",
+    "/onboarding",
     "/dashboard/:path*",
     "/focus/:path*",
     "/goals/:path*",

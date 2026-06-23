@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   Bell,
   BellOff,
   Bot,
@@ -15,8 +16,12 @@ import {
   LogOut,
   Moon,
   Smartphone,
+  Target,
+  Trash2,
   User,
 } from "lucide-react";
+
+import { clearMyData, updateLifePreferences } from "@/lib/actions/account";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,6 +37,8 @@ import { authClient } from "@/lib/auth-client";
 import { getExistingSubscription, pushSupported, subscribeToPush, unsubscribeFromPush } from "@/lib/push/client";
 import { getInitials } from "@/lib/user";
 
+type WorkSchedule = { days: string[]; startTime: string; endTime: string };
+
 interface SettingsPanelProps {
   user: {
     id: string;
@@ -40,7 +47,21 @@ interface SettingsPanelProps {
     createdAt: Date;
   };
   hasServerKey?: boolean;
+  lifePreferences?: {
+    useCases: string[];
+    primaryGoal: string;
+    workSchedule: WorkSchedule | null;
+  };
 }
+
+const USE_CASE_OPTIONS: { key: string; label: string }[] = [
+  { key: "student", label: "Student" },
+  { key: "creator", label: "Creator" },
+  { key: "professional", label: "Professional" },
+  { key: "personal", label: "Personal growth" },
+];
+
+const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const PREFERENCES_KEY = "life-os-preferences";
 
@@ -339,7 +360,239 @@ function PreferenceToggle({
   );
 }
 
-export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps) {
+function LifePreferencesCard({
+  initial,
+}: {
+  initial: NonNullable<SettingsPanelProps["lifePreferences"]>;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [useCases, setUseCases] = useState<string[]>(initial.useCases ?? []);
+  const [goal, setGoal] = useState(initial.primaryGoal ?? "");
+  const hasSchedule = !!initial.workSchedule;
+  const [days, setDays] = useState<string[]>(
+    initial.workSchedule?.days ?? ["Mon", "Tue", "Wed", "Thu", "Fri"]
+  );
+  const [start, setStart] = useState(initial.workSchedule?.startTime ?? "09:00");
+  const [end, setEnd] = useState(initial.workSchedule?.endTime ?? "17:00");
+
+  function toggleUseCase(key: string) {
+    setUseCases((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
+  function toggleDay(day: string) {
+    setDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
+    );
+  }
+
+  function handleSave() {
+    startTransition(async () => {
+      const result = await updateLifePreferences({
+        useCases,
+        primaryGoal: goal,
+        workSchedule: hasSchedule ? { days, startTime: start, endTime: end } : undefined,
+      });
+      if (result?.ok) {
+        toast.success("Preferences updated");
+        router.refresh();
+      } else {
+        toast.error("Could not save preferences");
+      }
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-accent" />
+          <CardTitle>Goals &amp; schedule</CardTitle>
+        </div>
+        <CardDescription>
+          What you use Life OS for, your main focus, and your work hours. The
+          planner uses these to prioritise your day.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Label>I use Life OS for</Label>
+          <div className="flex flex-wrap gap-2">
+            {USE_CASE_OPTIONS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => toggleUseCase(key)}
+                className={`rounded-lg border-2 px-3.5 py-1.5 text-[13px] font-medium transition-all ${
+                  useCases.includes(key)
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-border text-muted-foreground hover:border-border/80"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="primary-goal">Primary goal</Label>
+          <Input
+            id="primary-goal"
+            value={goal}
+            maxLength={120}
+            onChange={(e) => setGoal(e.target.value)}
+            placeholder="What do you want to accomplish right now?"
+          />
+        </div>
+
+        {hasSchedule && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Work days</Label>
+              <div className="flex flex-wrap gap-2">
+                {WEEK_DAYS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDay(d)}
+                    className={`rounded-lg border-2 px-3 py-1.5 text-[13px] font-medium transition-all ${
+                      days.includes(d)
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-border text-muted-foreground hover:border-border/80"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-end gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="work-start">Start</Label>
+                <Input
+                  id="work-start"
+                  type="time"
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                  className="w-32"
+                />
+              </div>
+              <span className="pb-2.5 text-muted-foreground/50">to</span>
+              <div className="space-y-1.5">
+                <Label htmlFor="work-end">End</Label>
+                <Input
+                  id="work-end"
+                  type="time"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                  className="w-32"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Button onClick={handleSave} disabled={pending} className="gap-2">
+          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          Save preferences
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DangerZoneCard() {
+  const [pending, startTransition] = useTransition();
+  const [confirming, setConfirming] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+
+  function handleClear() {
+    startTransition(async () => {
+      const result = await clearMyData();
+      if (result?.ok) {
+        toast.success("All your data was cleared. Let's set things up fresh.");
+        // Onboarding was reset server-side — send the user back through setup.
+        window.location.href = "/onboarding";
+      } else {
+        toast.error("Could not clear your data");
+      }
+    });
+  }
+
+  return (
+    <Card className="border-danger/30">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-danger" />
+          <CardTitle>Danger zone</CardTitle>
+        </div>
+        <CardDescription>
+          Permanently delete all your courses, tasks, goals, habits, notes,
+          finance entries, and other content, then start onboarding fresh. Your
+          account and sign-in stay. This cannot be undone.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {!confirming ? (
+          <Button
+            variant="danger"
+            className="gap-2"
+            onClick={() => setConfirming(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+            Clear all my data
+          </Button>
+        ) : (
+          <div className="space-y-3 rounded-lg border border-danger/30 bg-danger/5 p-4">
+            <p className="text-sm text-foreground">
+              Type <strong>DELETE</strong> to confirm. This wipes everything and
+              restarts onboarding.
+            </p>
+            <Input
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="danger"
+                disabled={confirmText !== "DELETE" || pending}
+                onClick={handleClear}
+                className="gap-2"
+              >
+                {pending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4" />
+                )}
+                Permanently clear my data
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setConfirming(false);
+                  setConfirmText("");
+                }}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function SettingsPanel({
+  user,
+  hasServerKey = false,
+  lifePreferences,
+}: SettingsPanelProps) {
   const router = useRouter();
   const [name, setName] = useState(user.name);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -483,6 +736,8 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
           </form>
         </CardContent>
       </Card>
+
+      {lifePreferences && <LifePreferencesCard initial={lifePreferences} />}
 
       <Card>
         <CardHeader>
@@ -637,6 +892,8 @@ export function SettingsPanel({ user, hasServerKey = false }: SettingsPanelProps
           </div>
         </CardContent>
       </Card>
+
+      <DangerZoneCard />
     </div>
   );
 }

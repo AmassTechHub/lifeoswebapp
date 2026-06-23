@@ -17,7 +17,7 @@ const mockGeneratedSchedule = [
   { time: "07:00", label: "Devotion and planning", source: "AI" },
   { time: "08:00", label: "Software Engineering lecture", source: "Timetable" },
   { time: "10:00", label: "Data Structures lab", source: "Timetable" },
-  { time: "14:00", label: "Client work for LPG Travels", source: "AI" },
+  { time: "14:00", label: "Client work block", source: "AI" },
   { time: "16:00", label: "System Design study block", source: "AI" },
   { time: "19:00", label: "Content recording", source: "AI" },
 ];
@@ -25,7 +25,7 @@ const mockGeneratedSchedule = [
 const chatMessages = [
   {
     role: "coach" as const,
-    text: "Hi Theophilus. Upload your timetable and I will build your week around goals, clients, and study blocks.",
+    text: "Welcome. Upload your timetable and I will build your week around goals, clients, and study blocks.",
   },
   {
     role: "user" as const,

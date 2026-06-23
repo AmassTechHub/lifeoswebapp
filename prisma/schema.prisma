@@ -276,6 +276,8 @@ model ContentItem {
   title     String
   channel   String
   stage     ContentStage @default(IDEA)
+  script    String       @default("") // full video/post script (AI-generated or hand-written)
+  hook      String       @default("") // opening hook line
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
 }

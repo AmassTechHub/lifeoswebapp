@@ -25,8 +25,8 @@ const sidebar = [
 
 const focusItems = [
   "Finish React assignment before 4 PM",
-  "Record AmassTechHub script (15 min)",
-  "Review LPG Travels deliverables",
+  "Record YouTube script (15 min)",
+  "Review client deliverables",
 ];
 
 export function DashboardWindowPreview() {
@@ -104,7 +104,7 @@ export function DashboardWindowPreview() {
               </aside>
 
               <div className="p-5 sm:p-6">
-                <p className="text-sm text-slate-500">Good morning, Theophilus</p>
+                <p className="text-sm text-slate-500">Good morning, Alex</p>
                 <div className="mt-4 flex items-center justify-between gap-4">
                   <h3 className="text-lg font-semibold text-slate-900">
                     Today&apos;s Focus

@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description:
     "An AI-powered Personal Operating System for ambitious students, creators, founders, and professionals.",
   manifest: "/manifest.json",
-  themeColor: "#3b82f6",
+  themeColor: "#0b0b14",
   icons: {
     icon: [
       { url: "/icon.svg", type: "image/svg+xml" },
@@ -37,7 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="light" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before paint to avoid a flash. Defaults to dark. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('life-os-theme');var m=(t==='light'||t==='dark')?t:'dark';var r=document.documentElement;r.classList.remove('light','dark');r.classList.add(m);}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster />

@@ -11,12 +11,12 @@ const activities = [
   {
     tag: "CL",
     action: "Client review scheduled",
-    detail: "LPG Travels: Website deliverables",
+    detail: "Client project: Website deliverables",
   },
   {
     tag: "CT",
     action: "Content block added",
-    detail: "AmassTechHub: Record 15 min script",
+    detail: "YouTube channel: Record 15 min script",
   },
   {
     tag: "LD",

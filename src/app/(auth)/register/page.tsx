@@ -71,7 +71,7 @@ export default function RegisterPage() {
           name="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Theophilus Amankwah"
+          placeholder="Your full name"
           autoComplete="name"
           required
           delay={0}

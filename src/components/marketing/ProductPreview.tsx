@@ -49,7 +49,7 @@ export function ProductPreview() {
               <div className="mt-6 space-y-3">
                 {[
                   "Finish React assignment before 4 PM",
-                  "Record AmassTechHub script",
+                  "Record YouTube script",
                   "Review client deliverables",
                 ].map((item, i) => (
                   <div
