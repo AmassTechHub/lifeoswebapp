@@ -132,6 +132,9 @@ export function CommandPalette() {
 
             <Command.Group
               heading="Actions"
+            >
+              <Command.Item
+                value="life-engine"
                 onSelect={runEngineAction}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground cursor-pointer aria-selected:bg-accent/10 aria-selected:text-foreground transition-colors"
               >
