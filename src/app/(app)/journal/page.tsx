@@ -13,10 +13,7 @@ export default async function JournalPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Daily Journal"
-        description="Capture your day, celebrate wins, name blockers, and get AI coaching."
-      />
+      <PageHeader title="Journal" />
       <JournalPanel today={today} recent={recent} />
     </DashboardShell>
   );

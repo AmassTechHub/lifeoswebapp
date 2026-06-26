@@ -9,6 +9,9 @@ export type LifePreferencesInput = {
   useCases?: string[];
   primaryGoal?: string | null;
   workSchedule?: { days: string[]; startTime: string; endTime: string } | null;
+  currency?: string;
+  gradingSystem?: string;
+  timezone?: string;
 };
 
 /**
@@ -43,6 +46,9 @@ export async function updateLifePreferences(input: LifePreferencesInput) {
       ...(useCase !== undefined ? { useCase } : {}),
       ...(primaryGoal !== undefined ? { primaryGoal } : {}),
       ...(workSchedule !== undefined ? { workSchedule } : {}),
+      ...(input.currency ? { currency: input.currency } : {}),
+      ...(input.gradingSystem ? { gradingSystem: input.gradingSystem } : {}),
+      ...(input.timezone ? { timezone: input.timezone } : {}),
     },
   });
 

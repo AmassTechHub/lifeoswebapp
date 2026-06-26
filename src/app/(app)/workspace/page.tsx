@@ -13,12 +13,8 @@ export default async function WorkspacePage() {
 
   return (
     <DashboardShell>
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Workspace</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Your private docs. Notes, plans, and
-          project write-ups linked to your automated day.
-        </p>
+      <header className="mb-5">
+        <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">Workspace</h1>
       </header>
 
       <WorkspaceEditor docs={docs} folders={folders} />

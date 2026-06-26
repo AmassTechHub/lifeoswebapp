@@ -101,7 +101,7 @@ export async function runWeeklyCycle(userId: string): Promise<CycleResult> {
     }),
   ]);
 
-  const summary = `Weekly: ${tasksDone} tasks done, ${tasksOpen} open, ${notesUpdated} notes updated, spent ₵${Math.round(expenses._sum.amount ?? 0)}.`;
+  const summary = `Weekly: ${tasksDone} tasks done, ${tasksOpen} open, ${notesUpdated} notes updated, spent ${Math.round(expenses._sum.amount ?? 0)} (local currency).`;
   const payload = { tasksDone, tasksOpen, notesUpdated, spent: expenses._sum.amount ?? 0 };
   await saveCycle(userId, "WEEKLY", now, summary, payload);
 

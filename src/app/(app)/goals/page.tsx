@@ -10,10 +10,7 @@ export default async function GoalsPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Goals"
-        description="From vision down to what you do today."
-      />
+      <PageHeader title="Goals" />
       <GoalsPanel goals={goals} />
     </DashboardShell>
   );

@@ -3,27 +3,31 @@ import { TrendingDown, TrendingUp, Wallet } from "lucide-react";
 
 import { dashboardCardClass } from "@/components/dashboard/dashboard-styles";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatMoney } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
 export function FinanceSnapshot({
   expenses,
   income,
   net,
+  currency = "GHS",
 }: {
   expenses: number;
   income: number;
   net: number;
+  currency?: string;
 }) {
   const netPositive = net >= 0;
+  const fm = (v: number) => formatMoney(Math.abs(v), currency, { decimals: 0 });
   const stats = [
-    { label: "Income", value: income, icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
-    { label: "Expenses", value: expenses, icon: TrendingDown, color: "text-danger", bg: "bg-danger/10" },
+    { label: "Income",   value: income,   icon: TrendingUp,  color: "text-success", bg: "bg-success/10" },
+    { label: "Expenses", value: expenses, icon: TrendingDown, color: "text-danger",  bg: "bg-danger/10" },
     {
       label: "Net",
       value: net,
       icon: Wallet,
       color: netPositive ? "text-success" : "text-danger",
-      bg: netPositive ? "bg-success/10" : "bg-danger/10",
+      bg:    netPositive ? "bg-success/10" : "bg-danger/10",
     },
   ];
 
@@ -48,7 +52,7 @@ export function FinanceSnapshot({
             </div>
             <p className="text-[10px] text-muted-foreground">{label}</p>
             <p className={cn("text-base font-bold tabular-nums", color)}>
-              {value < 0 ? "-" : ""}₵{Math.abs(value).toFixed(0)}
+              {value < 0 ? "-" : ""}{fm(value)}
             </p>
           </div>
         ))}

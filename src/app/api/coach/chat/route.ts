@@ -346,7 +346,7 @@ async function executeTool(
       const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-      const [expenses, prevExpenses, incomes] = await Promise.all([
+      const [expenses, prevExpenses, incomes, userPrefsRow] = await Promise.all([
         prisma.expense.findMany({
           where: { userId, date: { gte: monthStart } },
           select: { amount: true, category: true },
@@ -359,7 +359,10 @@ async function executeTool(
           where: { userId, date: { gte: monthStart } },
           select: { amount: true, source: true },
         }),
+        prisma.user.findUnique({ where: { id: userId }, select: { currency: true } }),
       ]);
+
+      const cur = userPrefsRow?.currency ?? "GHS";
 
       const byCategory: Record<string, number> = {};
       for (const e of expenses) byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
@@ -377,16 +380,16 @@ async function executeTool(
         .map(([cat, amt]) => {
           const prev = prevByCategory[cat] ?? 0;
           const change = prev > 0 ? ` (${amt > prev ? "+" : ""}${Math.round(((amt - prev) / prev) * 100)}% vs last month)` : "";
-          return `  ${cat}: ₵${amt.toFixed(2)}${change}`;
+          return `  ${cat}: ${cur} ${amt.toFixed(2)}${change}`;
         });
 
       return {
         result: [
           `Spending summary — ${month}:`,
-          `Total income: ₵${totalIncome.toFixed(2)}`,
-          `Total expenses: ₵${totalExpenses.toFixed(2)}`,
-          `Net: ₵${(totalIncome - totalExpenses).toFixed(2)}`,
-          `Last month total: ₵${prevTotal.toFixed(2)}`,
+          `Total income: ${cur} ${totalIncome.toFixed(2)}`,
+          `Total expenses: ${cur} ${totalExpenses.toFixed(2)}`,
+          `Net: ${cur} ${(totalIncome - totalExpenses).toFixed(2)}`,
+          `Last month total: ${cur} ${prevTotal.toFixed(2)}`,
           `By category:`,
           ...categoryLines,
         ].join("\n"),
@@ -397,7 +400,7 @@ async function executeTool(
       const now = new Date();
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-      const [budgets, expenses, goals] = await Promise.all([
+      const [budgets, expenses, goals, budgetUserPrefs] = await Promise.all([
         prisma.budgetCategory.findMany({
           where: { userId, month: now.getMonth() + 1, year: now.getFullYear() },
           select: { name: true, monthlyLimit: true },
@@ -411,7 +414,10 @@ async function executeTool(
           select: { name: true, targetAmount: true, currentAmount: true },
           take: 5,
         }),
+        prisma.user.findUnique({ where: { id: userId }, select: { currency: true } }),
       ]);
+
+      const bCur = budgetUserPrefs?.currency ?? "GHS";
 
       const byCategory: Record<string, number> = {};
       for (const e of expenses) byCategory[e.category] = (byCategory[e.category] ?? 0) + e.amount;
@@ -423,7 +429,7 @@ async function executeTool(
               const spent = byCategory[b.name] ?? 0;
               const pct = Math.round((spent / b.monthlyLimit) * 100);
               const status = pct >= 100 ? "OVER BUDGET" : pct >= 80 ? "NEAR LIMIT" : "OK";
-              return `  ${b.name}: ₵${spent.toFixed(2)} / ₵${b.monthlyLimit.toFixed(2)} (${pct}%) — ${status}`;
+              return `  ${b.name}: ${bCur} ${spent.toFixed(2)} / ${bCur} ${b.monthlyLimit.toFixed(2)} (${pct}%) — ${status}`;
             });
 
       const goalLines =
@@ -431,7 +437,7 @@ async function executeTool(
           ? []
           : ["Savings goals:", ...goals.map((g) => {
               const pct = g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0;
-              return `  ${g.name}: ₵${g.currentAmount.toFixed(2)} / ₵${g.targetAmount.toFixed(2)} (${pct}%)`;
+              return `  ${g.name}: ${bCur} ${g.currentAmount.toFixed(2)} / ${bCur} ${g.targetAmount.toFixed(2)} (${pct}%)`;
             })];
 
       return {

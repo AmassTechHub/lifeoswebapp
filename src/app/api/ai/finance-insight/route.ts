@@ -29,11 +29,19 @@ export async function POST(request: Request) {
   if (!usage.allowed) {
     return NextResponse.json({ insights: getDefaultInsights(budgets, spending, totalIncome) });
   }
-
   const userRecord = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { isPro: true },
+    select: { isPro: true, currency: true },
   });
+
+  const currencyCode = userRecord?.currency ?? "GHS";
+  const currencyLabel = currencyCode === "GHS" ? "GHS (Ghana Cedis)"
+    : currencyCode === "NGN" ? "NGN (Nigerian Naira)"
+    : currencyCode === "USD" ? "USD (US Dollars)"
+    : currencyCode === "GBP" ? "GBP (British Pounds)"
+    : currencyCode === "EUR" ? "EUR (Euros)"
+    : currencyCode === "KES" ? "KES (Kenyan Shilling)"
+    : currencyCode;
 
   const now = new Date();
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -60,18 +68,17 @@ export async function POST(request: Request) {
     totalBudget,
     projectedTotal: Math.round(projectedTotal),
     savingsGoals,
-    currency: "GHS (Ghana Cedis)",
+    currency: currencyLabel,
   };
 
-  const system = `You are a personal finance advisor for a Ghanaian student/young professional.
-Analyze their spending vs budget and return EXACTLY 4 insights as a JSON array (no markdown fences):
+  const system = `You are a personal finance advisor. Analyze the user's spending vs budget and return EXACTLY 4 insights as a JSON array (no markdown fences):
 [
   {"type":"warning|tip|success|info","title":"short title","body":"1-2 sentence insight"},
   ...
 ]
 Types: "warning" = overspending risk, "tip" = actionable advice, "success" = positive trend, "info" = neutral info.
-Include Ghana-specific investment advice when relevant (MTN MoMo savings 5% p.a., Treasury Bills ~22% p.a., Databank/Stanbic mutual funds, eCozy/Absa savings).
-Be specific with numbers (₵ amounts, percentages, days left).`;
+Always use the currency: ${currencyCode}. Be specific with real numbers (amounts, percentages, days left).
+Give actionable, personalized advice based on the actual numbers. Be direct like a smart friend, not a corporate advisor.`;
 
   try {
     const raw = await callClaude({
@@ -91,13 +98,14 @@ Be specific with numbers (₵ amounts, percentages, days left).`;
     // fall through to default
   }
 
-  return NextResponse.json({ insights: getDefaultInsights(budgets, spending, totalIncome) });
+  return NextResponse.json({ insights: getDefaultInsights(budgets, spending, totalIncome, currencyCode) });
 }
 
 function getDefaultInsights(
   budgets: { name: string; monthlyLimit: number }[],
   spending: Record<string, number>,
-  totalIncome: number
+  totalIncome: number,
+  currency = "GHS"
 ): { type: string; title: string; body: string }[] {
   const insights: { type: string; title: string; body: string }[] = [];
   const now = new Date();
@@ -122,7 +130,7 @@ function getDefaultInsights(
     insights.push({
       type: "success",
       title: "Positive savings",
-      body: `You have ₵${saved.toFixed(2)} remaining from your income. Consider putting ₵${Math.round(saved * 0.5)} in a Treasury Bill or MoMo Savings (up to 22% p.a.).`,
+      body: `You have ${saved.toFixed(2)} ${currency} remaining from your income. Consider putting half of it into a savings vehicle with your bank.`,
     });
   }
 
@@ -139,8 +147,8 @@ function getDefaultInsights(
   } else {
     insights.push({
       type: "tip",
-      title: "Investment tip",
-      body: "Treasury Bills in Ghana offer ~22% p.a. with low risk. Contact your bank to invest any surplus above ₵500 this month.",
+      title: "Save consistently",
+      body: "Log every expense to get accurate budget predictions and stay ahead of your spending.",
     });
   }
 
@@ -148,7 +156,7 @@ function getDefaultInsights(
     insights.push({
       type: "info",
       title: "Track consistently",
-      body: "Log every expense — even small ones like trotro fare or data bundles — to get accurate budget predictions.",
+      body: "Log every expense — even small ones — to get accurate budget predictions and spending trends.",
     });
   }
 

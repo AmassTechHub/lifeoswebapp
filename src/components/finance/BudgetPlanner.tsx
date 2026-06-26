@@ -26,6 +26,7 @@ import {
   updateSavingsGoal,
   deleteSavingsGoal,
 } from "@/lib/actions/budget";
+import { formatMoney } from "@/lib/currency";
 import { DEFAULT_CATEGORIES } from "@/lib/budget-constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +64,7 @@ type Props = {
   spending: Record<string, number>;
   savingsGoals: SavingsGoal[];
   totalIncome: number;
+  currency?: string;
 };
 
 const INSIGHT_STYLES = {
@@ -83,7 +85,7 @@ function barColor(p: number) {
   return "bg-success";
 }
 
-export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initialGoals, totalIncome }: Props) {
+export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initialGoals, totalIncome, currency = "GHS" }: Props) {
   const router = useRouter();
   const [budgets, setBudgets] = useState(initial);
   const [goals, setGoals] = useState(initialGoals);
@@ -95,6 +97,9 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
   const [insightsLoaded, setInsightsLoaded] = useState(false);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [pending, startTransition] = useTransition();
+
+  // Convenience currency formatter
+  const fm = (n: number) => formatMoney(n, currency);
 
   const totalBudget = budgets.reduce((s, b) => s + b.monthlyLimit, 0);
   const totalSpent = budgets.reduce((s, b) => s + (spending[b.name] ?? 0), 0);
@@ -138,7 +143,7 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
     if (!amount || amount <= 0) { toast.error("Enter a valid amount"); return; }
     startTransition(async () => {
       await updateSavingsGoal(topupGoal.id, topupGoal.currentAmount + amount);
-      toast.success(`₵${amount.toFixed(2)} added to ${topupGoal.name}`);
+      toast.success(`${fm(amount)} added to ${topupGoal.name}`);
       setDialog(null);
       setTopupGoal(null);
       router.refresh();
@@ -184,10 +189,10 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
     <div className="space-y-6">
       {/* Summary strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <SummaryTile label="Total budget" value={`₵${totalBudget.toFixed(2)}`} sub="this month" color="text-foreground" />
-        <SummaryTile label="Budgeted spend" value={`₵${totalSpent.toFixed(2)}`} sub={`${totalBudget > 0 ? pct(totalSpent, totalBudget) : 0}% used`} color={totalSpent > totalBudget ? "text-danger" : "text-success"} />
-        <SummaryTile label="Income" value={`₵${totalIncome.toFixed(2)}`} sub="this month" color="text-foreground" />
-        <SummaryTile label="Surplus" value={`${surplus >= 0 ? "+" : ""}₵${surplus.toFixed(2)}`} sub="after expenses" color={surplus >= 0 ? "text-success" : "text-danger"} />
+        <SummaryTile label="Total budget" value={fm(totalBudget)} sub="this month" color="text-foreground" />
+        <SummaryTile label="Budgeted spend" value={fm(totalSpent)} sub={`${totalBudget > 0 ? pct(totalSpent, totalBudget) : 0}% used`} color={totalSpent > totalBudget ? "text-danger" : "text-success"} />
+        <SummaryTile label="Income" value={fm(totalIncome)} sub="this month" color="text-foreground" />
+        <SummaryTile label="Surplus" value={`${surplus >= 0 ? "+" : ""}${fm(Math.abs(surplus))}`} sub="after expenses" color={surplus >= 0 ? "text-success" : "text-danger"} />
       </div>
 
       {/* Budget categories */}
@@ -233,7 +238,7 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                          ₵{spent.toFixed(2)} / ₵{b.monthlyLimit.toFixed(2)}
+                          {fm(spent)} / {fm(b.monthlyLimit)}
                         </span>
                         <button
                           type="button"
@@ -258,7 +263,7 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
                       />
                     </div>
                     <p className="text-right text-[10px] text-muted-foreground">
-                      {p}% · ₵{Math.max(0, b.monthlyLimit - spent).toFixed(2)} left
+                      {p}% · {fm(Math.max(0, b.monthlyLimit - spent))} left
                     </p>
                   </div>
                 );
@@ -366,8 +371,8 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
                   </div>
                   <div className="mt-3 space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>₵{g.currentAmount.toFixed(2)} saved</span>
-                      <span>₵{g.targetAmount.toFixed(2)} goal · {p}%</span>
+                      <span>{fm(g.currentAmount)} saved</span>
+                      <span>{fm(g.targetAmount)} goal · {p}%</span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
                       <div
@@ -377,7 +382,7 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
                     </div>
                     {monthlyNeeded !== null && monthlyNeeded > 0 && (
                       <p className="text-[11px] text-muted-foreground">
-                        Save ₵{monthlyNeeded.toFixed(2)}/month to reach your goal on time.
+                        Save {fm(monthlyNeeded)}/month to reach your goal on time.
                       </p>
                     )}
                   </div>
@@ -504,7 +509,7 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
               <Input name="emoji" defaultValue={editBudget?.emoji ?? "💰"} placeholder="💰" maxLength={4} />
             </div>
             <div className="space-y-1.5">
-              <Label>Monthly limit (₵)</Label>
+              <Label>Monthly limit</Label>
               <Input
                 name="monthlyLimit"
                 type="number"
@@ -550,12 +555,12 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
                 <Input name="emoji" defaultValue="🎯" placeholder="🎯" maxLength={4} />
               </div>
               <div className="space-y-1.5">
-                <Label>Already saved (₵)</Label>
+                <Label>Already saved</Label>
                 <Input name="currentAmount" type="number" step="0.01" min="0" placeholder="0.00" defaultValue="0" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Target amount (₵)</Label>
+              <Label>Target amount</Label>
               <Input name="targetAmount" type="number" step="0.01" min="1" placeholder="0.00" required />
             </div>
             <div className="space-y-1.5">
@@ -584,12 +589,12 @@ export function BudgetPlanner({ budgets: initial, spending, savingsGoals: initia
             className="space-y-4"
           >
             <div className="space-y-1.5">
-              <Label>Amount to add (₵)</Label>
+              <Label>Amount to add</Label>
               <Input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required autoFocus />
             </div>
             {topupGoal && (
               <p className="text-xs text-muted-foreground">
-                Current: ₵{topupGoal.currentAmount.toFixed(2)} → Target: ₵{topupGoal.targetAmount.toFixed(2)}
+                Current: {fm(topupGoal.currentAmount)} → Target: {fm(topupGoal.targetAmount)}
               </p>
             )}
             <DialogFooter>

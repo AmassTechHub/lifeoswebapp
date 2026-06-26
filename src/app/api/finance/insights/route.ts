@@ -97,8 +97,10 @@ export async function GET() {
 
   const userRecord = await prisma.user.findUnique({
     where: { id: userId },
-    select: { openAiKey: true, isPro: true },
+    select: { openAiKey: true, isPro: true, currency: true },
   });
+
+  const currencyCode = userRecord?.currency ?? "GHS";
 
   const apiKey = (userRecord?.openAiKey?.trim() || process.env.ANTHROPIC_API_KEY?.trim()) ?? "";
   if (!apiKey) {
@@ -109,7 +111,7 @@ export async function GET() {
   }
 
   const system = `You are a sharp personal finance coach analyzing a user's spending data for ${financialData.period}.
-Generate a concise, human-readable financial analysis. Be specific with real numbers. Use ₵ (Ghana cedis) for all amounts.
+Generate a concise, human-readable financial analysis. Be specific with real numbers. Use ${currencyCode} for all amounts.
 
 Use this exact structure (use **bold** for each section header):
 
@@ -117,7 +119,7 @@ Use this exact structure (use **bold** for each section header):
 2-3 sentences on income, spending, and net balance.
 
 **Biggest Changes**
-What increased or decreased vs last month. Be specific: "Food up ₵80 (+22%)" not just "spending increased".
+What increased or decreased vs last month. Be specific with actual amounts and percentages.
 
 **Budget Alerts**
 Only include if categories are ≥80% of budget or over limit. If no budgets set or all fine, write "All categories within budget."

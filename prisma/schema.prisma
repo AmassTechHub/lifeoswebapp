@@ -55,6 +55,11 @@ model User {
   primaryGoal         String?
   workSchedule        String? // JSON: {"days":["Mon",...],"startTime":"09:00","endTime":"17:00"}
 
+  // Personalisation — set in settings, used everywhere
+  currency       String @default("GHS")   // ISO 4217 code e.g. GHS, USD, NGN, KES, EUR, GBP
+  gradingSystem  String @default("knust") // key from GRADING_SYSTEMS
+  timezone       String @default("Africa/Accra") // IANA tz string
+
   goals      Goal[]
   tasks      Task[]
   habits     Habit[]

@@ -9,11 +9,8 @@ export default async function ContentPage() {
   const items = await getContentItems(session.user.id);
 
   return (
-    <DashboardShell>
-      <PageHeader
-        title="Content Hub"
-        description="Plan, script, and track every video from idea to published."
-      />
+    <DashboardShell maxWidth="full">
+      <PageHeader title="Content Hub" />
       <ContentPanel items={items} />
     </DashboardShell>
   );

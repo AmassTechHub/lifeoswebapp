@@ -1,190 +1,162 @@
+import Link from "next/link";
 import {
-  CheckCircle2,
+  Briefcase,
+  Calendar,
+  Clapperboard,
+  DollarSign,
+  Flame,
   GraduationCap,
-  Layers,
-  Repeat,
+  ListChecks,
   Target,
-  Wallet,
+  TrendingUp,
 } from "lucide-react";
 
-import { LifeEnginePanel } from "@/components/engine/LifeEnginePanel";
-import { AIUsageCard } from "@/components/dashboard/AIUsageCard";
-import { DailyCheckIn } from "@/components/dashboard/DailyCheckIn";
-import { ExamModePanel } from "@/components/dashboard/ExamModePanel";
-import { XPBadge } from "@/components/dashboard/XPBadge";
-import { WeeklyAIPlanner } from "@/components/dashboard/WeeklyAIPlanner";
-import { DailyScore } from "@/components/dashboard/DailyScore";
-import { DeadlineBanner } from "@/components/dashboard/DeadlineBanner";
-import { FinanceSnapshot } from "@/components/dashboard/FinanceSnapshot";
-import { ProgressOverview } from "@/components/dashboard/ProgressOverview";
-import { SmartActions } from "@/components/dashboard/SmartSystem";
-import { StudySnapshot } from "@/components/dashboard/StudySnapshot";
-import { TodaysClasses } from "@/components/dashboard/TodaysClasses";
-import { TodaysFocus } from "@/components/dashboard/TodaysFocus";
-import { TodaysSchedule } from "@/components/dashboard/TodaysSchedule";
-import { UpcomingDeadlines } from "@/components/dashboard/UpcomingDeadlines";
-import { DashboardShell } from "@/components/layout/DashboardShell";
-import { buildAutomationPulse } from "@/lib/automation/rules-engine";
-import { getDashboardData } from "@/lib/data/dashboard";
-import { getUpcomingExams } from "@/lib/study/exam-plan";
-import { getUserContextSummary } from "@/lib/ai/user-context";
+import { ExamModePanel }       from "@/components/dashboard/ExamModePanel";
+import { TodayAgenda }         from "@/components/dashboard/TodayAgenda";
+import { TodaysSchedule }      from "@/components/dashboard/TodaysSchedule";
+import { XPBadge }             from "@/components/dashboard/XPBadge";
+import { DashboardShell }      from "@/components/layout/DashboardShell";
+import { DashboardRightPanel } from "@/components/dashboard/DashboardRightPanel";
+import { getTodaySchedule }    from "@/lib/automation/generate-day";
+import { getTodayAgenda }      from "@/lib/data/today-agenda";
+import { getUpcomingExams }    from "@/lib/study/exam-plan";
 import { runLifeEngineIfNeeded } from "@/lib/engine/life-engine";
-import { requireSession } from "@/lib/session";
-import { cn } from "@/lib/utils";
-import { getFirstName, getGreeting, getInitials } from "@/lib/user";
+import { requireSession }      from "@/lib/session";
+import { getFirstName, getGreeting } from "@/lib/user";
+import { getUserPrefs }        from "@/lib/user-prefs";
 
-function KpiTile({
-  icon: Icon,
-  label,
-  value,
-  tone = "default",
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  tone?: "default" | "accent" | "success" | "danger";
-}) {
-  const toneClass =
-    tone === "accent"
-      ? "text-accent"
-      : tone === "success"
-        ? "text-success"
-        : tone === "danger"
-          ? "text-danger"
-          : "text-foreground";
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/70 bg-card/80 px-3.5 py-3 shadow-sm">
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent/10">
-        <Icon className="h-4 w-4 text-accent" />
-      </div>
-      <div className="min-w-0">
-        <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-          {label}
-        </p>
-        <p className={cn("text-lg font-bold leading-tight tracking-tight", toneClass)}>
-          {value}
-        </p>
-      </div>
-    </div>
-  );
+// ── Role-aware quick links ─────────────────────────────────────────────────
+type QuickLink = { href: string; label: string; icon: typeof ListChecks; color: string; roles?: string[] };
+
+const ALL_QUICK_LINKS: QuickLink[] = [
+  // Always shown
+  { href: "/tasks",     label: "Tasks",    icon: ListChecks,    color: "text-accent" },
+  { href: "/calendar",  label: "Calendar", icon: Calendar,      color: "text-purple-400" },
+  { href: "/goals",     label: "Goals",    icon: Target,        color: "text-pink-400" },
+  { href: "/habits",    label: "Habits",   icon: Flame,         color: "text-orange-400" },
+  { href: "/finance",   label: "Finance",  icon: DollarSign,    color: "text-green-400" },
+  // Student-only
+  { href: "/learning",  label: "Study",    icon: GraduationCap, color: "text-emerald-400", roles: ["student"] },
+  { href: "/grades",    label: "Grades",   icon: TrendingUp,    color: "text-sky-400",     roles: ["student"] },
+  { href: "/deadlines", label: "Deadlines",icon: Target,        color: "text-amber-400",   roles: ["student"] },
+  // Creator / Professional
+  { href: "/content",   label: "Content",  icon: Clapperboard,  color: "text-violet-400",  roles: ["creator"] },
+  { href: "/clients",   label: "Clients",  icon: Briefcase,     color: "text-amber-400",   roles: ["professional", "creator"] },
+];
+
+function getQuickLinks(useCases: string[]): QuickLink[] {
+  const noRole = useCases.length === 0;
+  // Filter to relevant links, then cap at 8 for the grid
+  const links = ALL_QUICK_LINKS.filter((l) => {
+    if (!l.roles || l.roles.length === 0) return true;
+    if (noRole) return true;
+    return l.roles.some((r) => useCases.includes(r));
+  });
+  return links.slice(0, 8);
 }
 
 export default async function DashboardPage() {
   const session = await requireSession();
   const firstName = getFirstName(session.user.name);
-  const engineRun = await runLifeEngineIfNeeded(session.user.id);
-  const data = await getDashboardData(session.user.id);
-  const context = await getUserContextSummary(session.user.id);
-  const pulse = buildAutomationPulse(context);
-  const upcomingExams = await getUpcomingExams(session.user.id);
-  const examItems = upcomingExams.map((e) => ({
-    id: e.id,
-    title: e.title,
-    type: e.type,
-    dueDate: e.dueDate,
+
+  await runLifeEngineIfNeeded(session.user.id);
+
+  const [agenda, scheduleRaw, upcomingExams, prefs] = await Promise.all([
+    getTodayAgenda(session.user.id),
+    getTodaySchedule(session.user.id),
+    getUpcomingExams(session.user.id, 14),
+    getUserPrefs(session.user.id),
+  ]);
+
+  const schedule = scheduleRaw.map((e) => ({
+    id:       e.id,
+    title:    e.title,
+    startAt:  e.startAt,
+    category: e.category,
+  }));
+
+  const examPanelItems = upcomingExams.map((e) => ({
+    id:         e.id,
+    title:      e.title,
+    type:       e.type,
+    dueDate:    e.dueDate,
     courseName: e.course?.name ?? null,
   }));
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
-    month: "long",
-    day: "numeric",
+    month:   "long",
+    day:     "numeric",
   });
 
-  const net = Math.round(data.finance.net);
-  const netLabel = `${net < 0 ? "-" : ""}GHS ${Math.abs(net).toLocaleString()}`;
+  const quickLinks = getQuickLinks(prefs.useCases);
+
+  // Personalised greeting suffix based on primary use-case
+  const contextHint = prefs.useCases.includes("student")
+    ? " 📚"
+    : prefs.useCases.includes("professional")
+    ? " 💼"
+    : prefs.useCases.includes("creator")
+    ? " 🎬"
+    : " 👋";
 
   return (
     <DashboardShell>
-      {/* Slim header */}
-      <header className="mb-4 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-linear-to-br from-accent to-accent-2 text-xs font-bold text-white shadow-sm sm:flex">
-            {getInitials(session.user.name)}
-          </div>
-          <div>
-            <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/50">
-              {today}
+      {/* ── Header ──────────────────────────────────────────────── */}
+      <header className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/40">
+            {today}
+          </p>
+          <h1 className="mt-0.5 text-[22px] font-bold tracking-tight text-foreground sm:text-2xl">
+            {getGreeting()}, {firstName}{contextHint}
+          </h1>
+          {prefs.useCases.length > 0 && (
+            <p className="mt-0.5 text-xs text-muted-foreground/50 capitalize">
+              {prefs.useCases.join(" · ")}
             </p>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
-              {getGreeting()}, {firstName}
-            </h1>
-          </div>
+          )}
         </div>
         <XPBadge className="hidden sm:flex" />
       </header>
 
-      <div className="space-y-4">
-        <DailyCheckIn />
+      {/* ── Quick-access shortcuts (role-aware) ─────────────────── */}
+      <div className={`mb-6 grid gap-2 grid-cols-4 ${quickLinks.length > 4 ? "sm:grid-cols-8" : "sm:grid-cols-4"}`}>
+        {quickLinks.map(({ href, label, icon: Icon, color }) => (
+          <Link
+            key={href}
+            href={href}
+            className="group flex flex-col items-center gap-1.5 rounded-xl border border-border/50 bg-card/60 px-2 py-3 text-center transition-all hover:border-accent/20 hover:bg-accent/5 hover:shadow-sm"
+          >
+            <span className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 transition-colors group-hover:bg-accent/10 ${color}`}>
+              <Icon className="h-4 w-4" />
+            </span>
+            <span className="text-[11px] font-medium text-muted-foreground group-hover:text-foreground">
+              {label}
+            </span>
+          </Link>
+        ))}
+      </div>
 
-        {/* Deadline alert */}
-        <DeadlineBanner
-          overdueCount={context.tasks.overdueCount}
-          dueTodayCount={context.tasks.dueToday.length}
-        />
+      {/* ── Main 2-column grid ──────────────────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px]">
 
-        {/* Compact KPI strip */}
-        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-6">
-          <KpiTile icon={Target} label="Daily score" value={`${data.dailyScore.average}`} tone="accent" />
-          <KpiTile icon={GraduationCap} label="Classes today" value={`${data.coursesToday.length}`} />
-          <KpiTile icon={Layers} label="Cards due" value={`${data.flashcardsDue}`} />
-          <KpiTile icon={CheckCircle2} label="Tasks due" value={`${context.tasks.dueToday.length}`} />
-          <KpiTile icon={Repeat} label="Habits" value={`${data.progress.habits.value}/${data.progress.habits.total}`} />
-          <KpiTile icon={Wallet} label="Net (mo)" value={netLabel} tone={net < 0 ? "danger" : "success"} />
+        {/* ── Left column ─────────────────────────────────────── */}
+        <div className="space-y-4 min-w-0">
+          <TodayAgenda overdue={agenda.overdue} today={agenda.today} />
+          {examPanelItems.length > 0 && <ExamModePanel exams={examPanelItems} />}
+          <TodaysSchedule schedule={schedule} />
         </div>
 
-        {/* Exam mode — only when exams are coming up */}
-        {examItems.length > 0 && <ExamModePanel exams={examItems} />}
-
-        {/* Engine status bar */}
-        <LifeEnginePanel
-          compact
-          initialMessage={engineRun?.message ?? "Life OS is ready."}
-          autoRan={Boolean(engineRun)}
-          pulseStatus={(engineRun?.pulseStatus ?? pulse.status) as "ok" | "warning" | "critical"}
-        />
-
-        {/* Dense row 1: focus + schedule + right rail */}
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <TodaysFocus items={data.focusItems} />
-          </div>
-          <div className="lg:col-span-4">
-            <TodaysSchedule schedule={data.schedule} />
-          </div>
-          <div className="space-y-3 lg:col-span-3">
-            <TodaysClasses courses={data.coursesToday} flashcardsDue={data.flashcardsDue} />
-            <UpcomingDeadlines deadlines={data.deadlines} />
-          </div>
+        {/* ── Right column (desktop) ──────────────────────────── */}
+        <div className="hidden lg:block">
+          <DashboardRightPanel userId={session.user.id} />
         </div>
+      </div>
 
-        {/* Dense row 2: study + finance + score */}
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3">
-          <StudySnapshot courses={data.studyCourses} recentNotes={data.recentNotes} />
-          <FinanceSnapshot
-            expenses={data.finance.expenses}
-            income={data.finance.income}
-            net={data.finance.net}
-          />
-          <DailyScore
-            average={data.dailyScore.average}
-            scores={data.dailyScore.scores}
-            hasSnapshot={data.dailyScore.hasSnapshot}
-          />
-        </div>
-
-        {/* Dense row 3: progress + actions + AI usage */}
-        <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <ProgressOverview progress={data.progress} />
-          </div>
-          <div className="space-y-3">
-            <SmartActions />
-            <AIUsageCard />
-          </div>
-        </div>
-
-        <WeeklyAIPlanner />
+      {/* Mobile: right-panel widgets stacked below */}
+      <div className="mt-4 lg:hidden">
+        <DashboardRightPanel userId={session.user.id} />
       </div>
     </DashboardShell>
   );

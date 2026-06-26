@@ -8,10 +8,7 @@ export default async function AnalyticsPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Study Analytics"
-        description="Track your learning performance, flashcard accuracy, and study time over the last 30 days."
-      />
+      <PageHeader title="Study Analytics" />
       <StudyAnalytics {...data} />
     </DashboardShell>
   );

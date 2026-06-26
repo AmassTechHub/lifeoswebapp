@@ -1,23 +1,19 @@
 import {
-  Award,
-  BarChart2,
+  AlarmClock,
   Bot,
   Calendar,
   CheckSquare,
-  ClipboardList,
-  Database,
+  Clapperboard,
   DollarSign,
+  FileText,
   Flame,
   Focus,
   GraduationCap,
   LayoutDashboard,
   NotebookPen,
-  PenLine,
-  FileText,
   Settings,
   Target,
   Users,
-  Video,
 } from "lucide-react";
 
 export type NavItem = {
@@ -31,49 +27,54 @@ export type NavSection = {
   items: NavItem[];
 };
 
+// ── Navigation sections ────────────────────────────────────────────────────
+// "Today" and "Life" are always shown.
+// "Study" only shows for students (role: student).
+// "Work" only shows for creators and professionals (roles: creator, professional).
+// The AppSidebar filters by useCases from the user's profile.
+// If no use-cases are set, all sections are shown.
+
 export const navSections: NavSection[] = [
   {
     label: "Today",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Focus", href: "/focus", icon: Focus },
-      { title: "Planner", href: "/planner", icon: PenLine },
-      { title: "Workspace", href: "/workspace", icon: FileText },
-      { title: "Databases", href: "/databases", icon: Database },
-      { title: "Calendar", href: "/calendar", icon: Calendar },
-      { title: "Tasks", href: "/tasks", icon: CheckSquare },
-      { title: "Journal", href: "/journal", icon: NotebookPen },
+      { title: "Tasks",     href: "/tasks",     icon: CheckSquare },
+      { title: "Calendar",  href: "/calendar",  icon: Calendar },
+      { title: "Focus",     href: "/focus",     icon: Focus },
+      { title: "Journal",   href: "/journal",   icon: NotebookPen },
     ],
   },
   {
-    label: "Study & Create",
+    label: "Study",
     items: [
-      { title: "Learning", href: "/learning", icon: GraduationCap },
-      { title: "Grade Tracker", href: "/grades", icon: Award },
-      { title: "Deadlines", href: "/deadlines", icon: ClipboardList },
-      { title: "Study Analytics", href: "/analytics", icon: BarChart2 },
-      { title: "Content Hub", href: "/content", icon: Video },
+      { title: "Learning",  href: "/learning",  icon: GraduationCap },
+      { title: "Deadlines", href: "/deadlines", icon: AlarmClock },
+    ],
+  },
+  {
+    label: "Work",
+    items: [
+      { title: "Content",   href: "/content",   icon: Clapperboard },
+      { title: "Clients",   href: "/clients",   icon: Users },
+      { title: "Workspace", href: "/workspace", icon: FileText },
     ],
   },
   {
     label: "Life",
     items: [
-      { title: "Goals", href: "/goals", icon: Target },
-      { title: "Habits", href: "/habits", icon: Flame },
-      { title: "Finance", href: "/finance", icon: DollarSign },
-      { title: "Clients", href: "/clients", icon: Users },
+      { title: "Goals",    href: "/goals",    icon: Target },
+      { title: "Habits",   href: "/habits",   icon: Flame },
+      { title: "Finance",  href: "/finance",  icon: DollarSign },
+      { title: "AI Coach", href: "/coach",    icon: Bot },
     ],
-  },
-  {
-    label: "Assistant",
-    items: [{ title: "AI Coach", href: "/coach", icon: Bot }],
   },
 ];
 
 export const settingsNavItem: NavItem = {
   title: "Settings",
-  href: "/settings",
-  icon: Settings,
+  href:  "/settings",
+  icon:  Settings,
 };
 
 export const navItems = [

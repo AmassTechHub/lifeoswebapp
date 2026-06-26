@@ -12,16 +12,20 @@ import {
   Check,
   Eye,
   EyeOff,
+  Globe,
   Loader2,
   LogOut,
   Moon,
   Smartphone,
   Target,
   Trash2,
+  TrendingUp,
   User,
 } from "lucide-react";
 
 import { clearMyData, updateLifePreferences } from "@/lib/actions/account";
+import { CURRENCIES } from "@/lib/currency";
+import { GRADING_SYSTEMS } from "@/lib/grades-constants";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +55,9 @@ interface SettingsPanelProps {
     useCases: string[];
     primaryGoal: string;
     workSchedule: WorkSchedule | null;
+    currency: string;
+    gradingSystem: string;
+    timezone: string;
   };
 }
 
@@ -62,6 +69,33 @@ const USE_CASE_OPTIONS: { key: string; label: string }[] = [
 ];
 
 const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+// Common IANA timezones grouped by region
+const TIMEZONES = [
+  { value: "Africa/Accra",       label: "Africa/Accra (GMT+0)" },
+  { value: "Africa/Lagos",       label: "Africa/Lagos (GMT+1)" },
+  { value: "Africa/Nairobi",     label: "Africa/Nairobi (GMT+3)" },
+  { value: "Africa/Johannesburg",label: "Africa/Johannesburg (GMT+2)" },
+  { value: "Africa/Cairo",       label: "Africa/Cairo (GMT+2)" },
+  { value: "Africa/Casablanca",  label: "Africa/Casablanca (GMT+1)" },
+  { value: "America/New_York",   label: "America/New_York (EST/EDT)" },
+  { value: "America/Chicago",    label: "America/Chicago (CST/CDT)" },
+  { value: "America/Denver",     label: "America/Denver (MST/MDT)" },
+  { value: "America/Los_Angeles",label: "America/Los_Angeles (PST/PDT)" },
+  { value: "America/Toronto",    label: "America/Toronto (EST/EDT)" },
+  { value: "America/Sao_Paulo",  label: "America/Sao_Paulo (BRT)" },
+  { value: "Europe/London",      label: "Europe/London (GMT/BST)" },
+  { value: "Europe/Paris",       label: "Europe/Paris (CET/CEST)" },
+  { value: "Europe/Berlin",      label: "Europe/Berlin (CET/CEST)" },
+  { value: "Europe/Amsterdam",   label: "Europe/Amsterdam (CET/CEST)" },
+  { value: "Asia/Dubai",         label: "Asia/Dubai (GST)" },
+  { value: "Asia/Kolkata",       label: "Asia/Kolkata (IST)" },
+  { value: "Asia/Singapore",     label: "Asia/Singapore (SGT)" },
+  { value: "Asia/Tokyo",         label: "Asia/Tokyo (JST)" },
+  { value: "Asia/Shanghai",      label: "Asia/Shanghai (CST)" },
+  { value: "Australia/Sydney",   label: "Australia/Sydney (AEST/AEDT)" },
+  { value: "Pacific/Auckland",   label: "Pacific/Auckland (NZST/NZDT)" },
+];
 
 const PREFERENCES_KEY = "life-os-preferences";
 
@@ -375,6 +409,9 @@ function LifePreferencesCard({
   );
   const [start, setStart] = useState(initial.workSchedule?.startTime ?? "09:00");
   const [end, setEnd] = useState(initial.workSchedule?.endTime ?? "17:00");
+  const [currency, setCurrency] = useState(initial.currency ?? "GHS");
+  const [gradingSystem, setGradingSystem] = useState(initial.gradingSystem ?? "knust");
+  const [timezone, setTimezone] = useState(initial.timezone ?? "Africa/Accra");
 
   function toggleUseCase(key: string) {
     setUseCases((prev) =>
@@ -393,9 +430,12 @@ function LifePreferencesCard({
         useCases,
         primaryGoal: goal,
         workSchedule: hasSchedule ? { days, startTime: start, endTime: end } : undefined,
+        currency,
+        gradingSystem,
+        timezone,
       });
       if (result?.ok) {
-        toast.success("Preferences updated");
+        toast.success("Preferences saved — reload any open page to see changes");
         router.refresh();
       } else {
         toast.error("Could not save preferences");
@@ -408,14 +448,16 @@ function LifePreferencesCard({
       <CardHeader>
         <div className="flex items-center gap-2">
           <Target className="h-4 w-4 text-accent" />
-          <CardTitle>Goals &amp; schedule</CardTitle>
+          <CardTitle>Goals &amp; personalisation</CardTitle>
         </div>
         <CardDescription>
-          What you use Life OS for, your main focus, and your work hours. The
-          planner uses these to prioritise your day.
+          What you use Life OS for, your primary focus, currency, grading system, and timezone.
+          These adapt the whole system to your context.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+
+        {/* Use-case chips */}
         <div className="space-y-2">
           <Label>I use Life OS for</Label>
           <div className="flex flex-wrap gap-2">
@@ -434,19 +476,91 @@ function LifePreferencesCard({
               </button>
             ))}
           </div>
+          <p className="text-[11px] text-muted-foreground/60">
+            The sidebar navigation and dashboard adapt based on what you select.
+          </p>
         </div>
 
+        {/* Primary goal */}
         <div className="space-y-2">
-          <Label htmlFor="primary-goal">Primary goal</Label>
+          <Label htmlFor="primary-goal">Primary goal right now</Label>
           <Input
             id="primary-goal"
             value={goal}
             maxLength={120}
             onChange={(e) => setGoal(e.target.value)}
-            placeholder="What do you want to accomplish right now?"
+            placeholder="e.g. Graduate with First Class this semester"
           />
         </div>
 
+        {/* ── Localisation row ───────────────────────────────────── */}
+        <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Globe className="h-4 w-4 text-accent" />
+            <p className="text-sm font-semibold text-foreground">Localisation</p>
+          </div>
+
+          {/* Currency */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="currency">Currency</Label>
+              <select
+                id="currency"
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              >
+                {CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground/60">
+                Used everywhere money is displayed in Finance.
+              </p>
+            </div>
+
+            {/* Grading system */}
+            <div className="space-y-1.5">
+              <Label htmlFor="grading-system">
+                <TrendingUp className="inline h-3.5 w-3.5 mr-1" />
+                Grading system
+              </Label>
+              <select
+                id="grading-system"
+                value={gradingSystem}
+                onChange={(e) => setGradingSystem(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+              >
+                {Object.values(GRADING_SYSTEMS).map((s) => (
+                  <option key={s.key} value={s.key}>{s.label}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground/60">
+                Sets the default in Grades. You can always switch per-session.
+              </p>
+            </div>
+          </div>
+
+          {/* Timezone */}
+          <div className="space-y-1.5">
+            <Label htmlFor="timezone">Timezone</Label>
+            <select
+              id="timezone"
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+            >
+              {TIMEZONES.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground/60">
+              Used for scheduling, calendar events, and deadline calculations.
+            </p>
+          </div>
+        </div>
+
+        {/* Work schedule (shown when they set one during onboarding) */}
         {hasSchedule && (
           <div className="space-y-4">
             <div className="space-y-2">

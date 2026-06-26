@@ -11,10 +11,7 @@ export default async function PlannerPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Planner"
-        description="Automated daily setup. Your schedule, focus, and score built from real data."
-      />
+      <PageHeader title="Planner" />
       <div className="mb-8">
         <TimetableUpload />
       </div>

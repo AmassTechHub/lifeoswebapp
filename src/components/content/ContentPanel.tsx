@@ -12,7 +12,14 @@ import {
   updateContentScript,
   updateContentStage,
 } from "@/lib/actions/content";
-import { contentStageLabels, contentStages } from "@/lib/content-stages";
+import {
+  contentStages,
+  contentStageLabels,
+  detectPreset,
+  getStagesForPlatform,
+  getStageLabelForPlatform,
+  type ContentStage,
+} from "@/lib/content-stages";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -144,7 +151,11 @@ export function ContentPanel({ items }: { items: ContentItem[] }) {
     }
   }
 
-  const byStage = contentStages.map((stage) => ({
+  // Group items by stage. Each channel may use different stages, so for the
+  // kanban we show ALL stages but only include items that belong to each.
+  const allActiveStages = contentStages;
+
+  const byStage = allActiveStages.map((stage) => ({
     stage,
     label: contentStageLabels[stage],
     items: items.filter((i) => i.stage === stage),
@@ -304,54 +315,12 @@ export function ContentPanel({ items }: { items: ContentItem[] }) {
           <CardTitle className="text-base">New piece of content</CardTitle>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              startTransition(async () => {
-                await createContentItem(new FormData(e.currentTarget));
-                (e.target as HTMLFormElement).reset();
-                toast.success("Added to pipeline");
-                router.refresh();
-              });
-            }}
-            className="grid gap-3 sm:grid-cols-2"
-          >
-            <div className="sm:col-span-2">
-              <Input name="title" placeholder="Video title or topic" required />
-            </div>
-            <div>
-              <Label className="text-xs">Channel</Label>
-              <Input
-                name="channel"
-                list="content-channels"
-                className="mt-1"
-                placeholder="e.g. YouTube, Newsletter, General"
-                defaultValue={channels[0] ?? ""}
-              />
-            </div>
-            <div>
-              <Label className="text-xs">Stage</Label>
-              <select
-                name="stage"
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                defaultValue="IDEA"
-              >
-                {contentStages.map((s) => (
-                  <option key={s} value={s}>
-                    {contentStageLabels[s]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button type="submit" disabled={pending} className="gap-1 sm:col-span-2">
-              {pending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
-              Add to pipeline
-            </Button>
-          </form>
+          <NewContentForm channels={channels} pending={pending} onSubmit={(fd) => {
+            startTransition(async () => {
+              await createContentItem(fd);
+              toast.success("Added to pipeline");
+            });
+          }} />
         </CardContent>
       </Card>
 
@@ -407,15 +376,20 @@ function ContentCard({
   onDelete: () => void;
   onEditScript: () => void;
 }) {
-  const idx = contentStages.indexOf(item.stage as (typeof contentStages)[number]);
-  const next =
-    idx >= 0 && idx < contentStages.length - 1 ? contentStages[idx + 1] : null;
+  const platformStages = getStagesForPlatform(item.channel);
+  const idx = platformStages.indexOf(item.stage as ContentStage);
+  const next = idx >= 0 && idx < platformStages.length - 1 ? platformStages[idx + 1] : null;
+  const nextLabel = next ? getStageLabelForPlatform(next, item.channel) : null;
   const hasScript = !!item.script?.trim();
+  const preset = detectPreset(item.channel);
 
   return (
     <div className="rounded-lg border border-border/60 bg-background/50 p-3">
-      <p className="text-sm font-medium leading-snug">{item.title}</p>
-      <p className="mt-1 text-xs text-muted-foreground">{item.channel}</p>
+      <div className="flex items-start gap-1.5 mb-1">
+        <span className="text-sm">{preset.emoji}</span>
+        <p className="text-sm font-medium leading-snug flex-1">{item.title}</p>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground">{item.channel}</p>
       <button
         type="button"
         onClick={onEditScript}
@@ -434,15 +408,13 @@ function ContentCard({
           <button
             type="button"
             onClick={() => onAdvance(next)}
-            className={cn(
-              "inline-flex items-center gap-0.5 text-xs font-medium text-accent hover:underline"
-            )}
+            className="inline-flex items-center gap-0.5 text-xs font-medium text-accent hover:underline"
           >
-            Move to {contentStageLabels[next]}
+            → {nextLabel}
             <ChevronRight className="h-3 w-3" />
           </button>
         ) : (
-          <span className="text-xs text-success">Live</span>
+          <span className="text-xs text-success">✓ Live</span>
         )}
         <button
           type="button"
@@ -454,5 +426,72 @@ function ContentCard({
         </button>
       </div>
     </div>
+  );
+}
+
+// ── Platform-aware new content form ───────────────────────────────────────
+function NewContentForm({
+  channels,
+  pending,
+  onSubmit,
+}: {
+  channels: string[];
+  pending: boolean;
+  onSubmit: (fd: FormData) => void;
+}) {
+  const [channel, setChannel] = useState(channels[0] ?? "YouTube");
+  const platformStages = getStagesForPlatform(channel);
+  const preset = detectPreset(channel);
+  const router = useRouter();
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    onSubmit(fd);
+    (e.target as HTMLFormElement).reset();
+    setChannel(channels[0] ?? "YouTube");
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <Input name="title" placeholder="Title or topic idea" required />
+      </div>
+      <div>
+        <Label className="text-xs">
+          Platform / Channel {preset && <span className="ml-1">{preset.emoji}</span>}
+        </Label>
+        <Input
+          name="channel"
+          list="content-channels"
+          className="mt-1"
+          placeholder="YouTube, Blog, Podcast, Newsletter…"
+          value={channel}
+          onChange={(e) => setChannel(e.target.value)}
+        />
+        <p className="mt-0.5 text-[10px] text-muted-foreground/60">
+          Stages adapt automatically to your platform
+        </p>
+      </div>
+      <div>
+        <Label className="text-xs">Starting stage</Label>
+        <select
+          name="stage"
+          defaultValue="IDEA"
+          className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none"
+        >
+          {platformStages.map((s) => (
+            <option key={s} value={s}>
+              {getStageLabelForPlatform(s, channel)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <Button type="submit" disabled={pending} className="gap-1 sm:col-span-2">
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+        Add to pipeline
+      </Button>
+    </form>
   );
 }

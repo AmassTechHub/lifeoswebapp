@@ -21,10 +21,7 @@ export default async function DeadlinesPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Deadlines"
-        description="Stay on top of every assignment, exam, and project deadline."
-      />
+      <PageHeader title="Deadlines" />
       <DeadlineTracker deadlines={deadlines} courses={courseList} />
     </DashboardShell>
   );

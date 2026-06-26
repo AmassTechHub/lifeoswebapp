@@ -8,10 +8,7 @@ export default async function CoachPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="AI Coach"
-        description="Plan your day, study smarter, script content, and get unstuck without leaving Life OS."
-      />
+      <PageHeader title="AI Coach" />
       <CoachPanel />
     </DashboardShell>
   );

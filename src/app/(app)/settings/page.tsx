@@ -1,4 +1,5 @@
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
+import { DashboardShell } from "@/components/layout/DashboardShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/session";
@@ -12,10 +13,13 @@ export default async function SettingsPage() {
       useCase: true,
       primaryGoal: true,
       workSchedule: true,
+      currency: true,
+      gradingSystem: true,
+      timezone: true,
     },
   });
 
-  function parseJson<T>(value: string | null, fallback: T): T {
+  function parseJson<T>(value: string | null | undefined, fallback: T): T {
     if (!value) return fallback;
     try {
       return JSON.parse(value) as T;
@@ -25,12 +29,9 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="p-8">
-      <PageHeader
-        title="Settings"
-        description="Manage your profile, preferences, and account."
-      />
-      <div className="mt-8 max-w-2xl">
+    <DashboardShell maxWidth="narrow">
+      <PageHeader title="Settings" />
+      <div className="max-w-2xl">
         <SettingsPanel
           user={{
             id: session.user.id,
@@ -47,9 +48,12 @@ export default async function SettingsPage() {
               startTime: string;
               endTime: string;
             } | null>(userRecord?.workSchedule ?? null, null),
+            currency: userRecord?.currency ?? "GHS",
+            gradingSystem: userRecord?.gradingSystem ?? "knust",
+            timezone: userRecord?.timezone ?? "Africa/Accra",
           }}
         />
       </div>
-    </div>
+    </DashboardShell>
   );
 }

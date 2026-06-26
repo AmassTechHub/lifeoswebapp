@@ -9,7 +9,13 @@ import { VoiceAssistant } from "@/components/ai/VoiceAssistant";
 import { ProductivityNudge } from "@/components/coach/ProductivityNudge";
 import { NotificationPermissionPrompt } from "@/components/notifications/NotificationPermissionPrompt";
 
-export function AppLayoutClient({ children }: { children: React.ReactNode }) {
+export function AppLayoutClient({
+  children,
+  useCases = [],
+}: {
+  children: React.ReactNode;
+  useCases?: string[];
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,24 +29,34 @@ export function AppLayoutClient({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Sidebar */}
-      <AppSidebar isOpen={open} onClose={() => setOpen(false)} />
+      <AppSidebar isOpen={open} onClose={() => setOpen(false)} useCases={useCases} />
 
-      {/* Content column */}
+      {/* Main content column */}
       <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background/80 px-4 backdrop-blur-md lg:hidden">
-          <span className="text-base font-semibold tracking-tight">Life OS</span>
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/90 px-4 backdrop-blur-md lg:hidden">
+          <div className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-[11px] font-black text-white shadow-sm shadow-accent/30">
+              L
+            </span>
+            <span className="text-[14px] font-semibold tracking-tight text-foreground">
+              Life OS
+            </span>
+          </div>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-muted"
             aria-label="Toggle sidebar"
           >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
           </button>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+          {children}
+        </main>
       </div>
 
       <CommandPalette />

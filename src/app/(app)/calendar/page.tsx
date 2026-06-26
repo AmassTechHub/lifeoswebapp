@@ -10,10 +10,7 @@ export default async function CalendarPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Calendar"
-        description="Every class, client call, and personal block in one timeline."
-      />
+      <PageHeader title="Calendar" />
       <CalendarPanel events={events} />
     </DashboardShell>
   );

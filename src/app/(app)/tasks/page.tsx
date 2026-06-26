@@ -9,11 +9,8 @@ export default async function TasksPage() {
   const tasks = await getTasks(session.user.id);
 
   return (
-    <DashboardShell>
-      <PageHeader
-        title="Tasks"
-        description="Academics, clients, content, and personal work in one list."
-      />
+    <DashboardShell maxWidth="full">
+      <PageHeader title="Tasks" />
       <TasksPanel tasks={tasks} />
     </DashboardShell>
   );

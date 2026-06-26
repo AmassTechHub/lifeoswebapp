@@ -90,15 +90,19 @@ export function CGPATracker({
   grades: initial,
   previousCWA: initPrevWA,
   previousCredits: initPrevCredits,
+  defaultGradingSystem = "knust",
 }: {
   grades: Grade[];
   previousCWA: number | null;
   previousCredits: number | null;
+  defaultGradingSystem?: string;
 }) {
   const router = useRouter();
   const [grades, setGrades] = useState(initial);
   const [viewMode, setViewMode] = useState<ViewMode>("wa");
-  const [system, setSystem] = useState<GradingSystem>(DEFAULT_SYSTEM);
+  const [system, setSystem] = useState<GradingSystem>(
+    GRADING_SYSTEMS[defaultGradingSystem as keyof typeof GRADING_SYSTEMS] ?? DEFAULT_SYSTEM
+  );
   const [showSystemPicker, setShowSystemPicker] = useState(false);
   const [dialog, setDialog] = useState<"add" | "edit" | "prev" | null>(null);
   const [editing, setEditing] = useState<Grade | null>(null);

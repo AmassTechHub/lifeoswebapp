@@ -27,6 +27,7 @@ import {
 
 import { createExpense, createIncome, deleteExpense } from "@/lib/actions/finance";
 import { BudgetPlanner } from "@/components/finance/BudgetPlanner";
+import { formatMoney } from "@/lib/currency";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -207,11 +208,12 @@ function renderInsights(text: string) {
   });
 }
 
-function FinanceInsightsTab() {
+function FinanceInsightsTab({ currency = "GHS" }: { currency?: string }) {
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState<string | null>(null);
   const [data, setData] = useState<InsightData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fm = (n: number) => formatMoney(n, currency);
 
   async function generate() {
     setLoading(true);
@@ -275,16 +277,16 @@ function FinanceInsightsTab() {
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-xl border border-border/60 bg-card/80 p-3 text-center">
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Income</p>
-            <p className="mt-1 text-lg font-bold text-success">₵{data.totalIncome.toFixed(2)}</p>
+            <p className="mt-1 text-lg font-bold text-success">{fm(data.totalIncome)}</p>
           </div>
           <div className="rounded-xl border border-border/60 bg-card/80 p-3 text-center">
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Spent</p>
-            <p className="mt-1 text-lg font-bold text-danger">₵{data.totalExpenses.toFixed(2)}</p>
+            <p className="mt-1 text-lg font-bold text-danger">{fm(data.totalExpenses)}</p>
           </div>
           <div className={cn("rounded-xl border p-3 text-center", netPositive ? "border-success/20 bg-success/5" : "border-danger/20 bg-danger/5")}>
             <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Net</p>
             <p className={cn("mt-1 text-lg font-bold", netPositive ? "text-success" : "text-danger")}>
-              {netPositive ? "+" : ""}₵{data.net.toFixed(2)}
+              {netPositive ? "+" : "-"}{fm(Math.abs(data.net))}
             </p>
           </div>
         </div>
@@ -312,7 +314,7 @@ function FinanceInsightsTab() {
               <div key={c.category} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-muted-foreground">{c.category}</span>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold tabular-nums">₵{c.spent.toFixed(2)}</span>
+                  <span className="font-semibold tabular-nums">{fm(c.spent)}</span>
                   {c.changePercent !== null && (
                     <span className={cn(
                       "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
@@ -354,12 +356,14 @@ export function FinancePanel({
   budgets,
   budgetSpending,
   savingsGoals,
+  currency = "GHS",
 }: {
   data: Summary;
   monthlySpending: MonthData[];
   budgets: BudgetRow[];
   budgetSpending: Record<string, number>;
   savingsGoals: SavingsGoal[];
+  currency?: string;
 }) {
   const router = useRouter();
   const [data, setData] = useState(initial);
@@ -371,6 +375,10 @@ export function FinancePanel({
   const [momoState, setMomoState] = useState<MoMoSendState>({ phase: "idle" });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Convenience formatter — uses the user's currency setting
+  const fm = (amount: number, opts?: { decimals?: number }) =>
+    formatMoney(amount, currency, opts);
 
   async function handleAddExpense(fd: FormData) {
     const res = await createExpense(fd);
@@ -543,7 +551,7 @@ export function FinancePanel({
       </div>
 
       {/* AI Insights tab */}
-      {tab === "insights" && <FinanceInsightsTab />}
+      {tab === "insights" && <FinanceInsightsTab currency={currency} />}
 
       {/* Budget Planner tab */}
       {tab === "budget" && (
@@ -552,6 +560,7 @@ export function FinancePanel({
           spending={budgetSpending}
           savingsGoals={savingsGoals}
           totalIncome={data.totalIncome}
+          currency={currency}
         />
       )}
 
@@ -560,21 +569,21 @@ export function FinancePanel({
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Income this month"
-          value={`₵${data.totalIncome.toFixed(2)}`}
+          value={fm(data.totalIncome)}
           icon={<TrendingUp className="h-5 w-5 text-success" />}
           color="text-success"
           bg="bg-success/10"
         />
         <StatCard
           label="Expenses this month"
-          value={`₵${data.totalExpenses.toFixed(2)}`}
+          value={fm(data.totalExpenses)}
           icon={<TrendingDown className="h-5 w-5 text-danger" />}
           color="text-danger"
           bg="bg-danger/10"
         />
         <StatCard
           label="Net balance"
-          value={`${netPositive ? "+" : ""}₵${data.net.toFixed(2)}`}
+          value={`${netPositive ? "+" : "-"}${fm(Math.abs(data.net))}`}
           icon={<Wallet className={cn("h-5 w-5", netPositive ? "text-success" : "text-danger")} />}
           color={netPositive ? "text-success" : "text-danger"}
           bg={netPositive ? "bg-success/10" : "bg-danger/10"}
@@ -623,7 +632,7 @@ export function FinancePanel({
                   <div key={`${d.month}-${d.year}`} className="flex flex-1 flex-col items-center gap-1">
                     {d.total > 0 && (
                       <p className="text-[9px] text-muted-foreground/70">
-                        ₵{d.total >= 1000 ? `${(d.total / 1000).toFixed(1)}k` : d.total.toFixed(0)}
+                        {fm(d.total, { compact: true })}
                       </p>
                     )}
                     <div className="flex w-full flex-1 items-end">
@@ -654,25 +663,25 @@ export function FinancePanel({
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="rounded-xl bg-muted/30 p-3 text-center">
                 <p className="text-xs text-muted-foreground">Daily rate</p>
-                <p className="mt-1 text-xl font-bold tabular-nums">₵{dailyRate.toFixed(2)}</p>
+                <p className="mt-1 text-xl font-bold tabular-nums">{fm(dailyRate)}</p>
                 <p className="text-[10px] text-muted-foreground">avg per day</p>
               </div>
               <div className="rounded-xl bg-muted/30 p-3 text-center">
                 <p className="text-xs text-muted-foreground">So far ({dayOfMonth}d)</p>
-                <p className="mt-1 text-xl font-bold tabular-nums text-danger">₵{data.totalExpenses.toFixed(2)}</p>
+                <p className="mt-1 text-xl font-bold tabular-nums text-danger">{fm(data.totalExpenses)}</p>
                 <p className="text-[10px] text-muted-foreground">spent this month</p>
               </div>
               <div className={cn("rounded-xl p-3 text-center", projectedMonthly > data.totalIncome ? "bg-danger/10" : "bg-success/10")}>
                 <p className="text-xs text-muted-foreground">Month-end forecast</p>
                 <p className={cn("mt-1 text-xl font-bold tabular-nums", projectedMonthly > data.totalIncome ? "text-danger" : "text-success")}>
-                  ₵{projectedMonthly.toFixed(2)}
+                  {fm(projectedMonthly)}
                 </p>
                 <p className="text-[10px] text-muted-foreground">at this rate</p>
               </div>
             </div>
             {projectedMonthly > data.totalIncome && data.totalIncome > 0 && (
               <p className="mt-3 rounded-lg border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
-                At this rate, your expenses will exceed your income by ₵{(projectedMonthly - data.totalIncome).toFixed(2)} this month.
+                At this rate, your expenses will exceed your income by {fm(projectedMonthly - data.totalIncome)} this month.
               </p>
             )}
           </CardContent>
@@ -693,7 +702,7 @@ export function FinancePanel({
                   <div key={cat} className="space-y-1">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">{cat}</span>
-                      <span className="font-semibold">₵{amt.toFixed(2)}</span>
+                      <span className="font-semibold">{fm(amt)}</span>
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                       <div
@@ -738,7 +747,7 @@ export function FinancePanel({
                       )}
                     </div>
                     <div className="flex shrink-0 items-center gap-3">
-                      <span className="text-sm font-semibold text-danger">₵{e.amount.toFixed(2)}</span>
+                      <span className="text-sm font-semibold text-danger">{fm(e.amount)}</span>
                       <button
                         type="button"
                         onClick={() => handleDeleteExpense(e.id, e.category)}
@@ -766,7 +775,7 @@ export function FinancePanel({
             className="space-y-4"
           >
             <div className="space-y-1.5">
-              <Label>Amount (₵)</Label>
+              <Label>Amount</Label>
               <Input name="amount" type="number" step="0.01" min="0" placeholder="0.00" required autoFocus />
             </div>
             <div className="space-y-1.5">
@@ -810,7 +819,7 @@ export function FinancePanel({
             className="space-y-4"
           >
             <div className="space-y-1.5">
-              <Label>Amount (₵)</Label>
+              <Label>Amount</Label>
               <Input name="amount" type="number" step="0.01" min="0" placeholder="0.00" required autoFocus />
             </div>
             <div className="space-y-1.5">
@@ -885,7 +894,7 @@ export function FinancePanel({
                           <p className="truncate text-xs">{row.description || "—"}</p>
                         </td>
                         <td className="px-3 py-2 text-right font-semibold text-danger text-xs">
-                          ₵{row.amount.toFixed(2)}
+                          {fm(row.amount)}
                         </td>
                         <td className="px-3 py-2">
                           <input
@@ -958,7 +967,7 @@ export function FinancePanel({
                 <Input name="recipientName" placeholder="Kwame, Ama..." />
               </div>
               <div className="space-y-1.5">
-                <Label>Amount (₵)</Label>
+                <Label>Amount</Label>
                 <Input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" required />
               </div>
               <div className="space-y-1.5">
@@ -1011,7 +1020,7 @@ export function FinancePanel({
               <div className="text-center">
                 <p className="text-sm font-semibold text-success">Transfer successful</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  ₵{momoState.amount.toFixed(2)} sent to {momoState.recipient}.<br />
+                  {fm(momoState.amount)} sent to {momoState.recipient}.<br />
                   Expense logged automatically.
                 </p>
               </div>

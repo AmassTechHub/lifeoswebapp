@@ -12,10 +12,7 @@ export default async function HabitsPage() {
 
   return (
     <DashboardShell>
-      <PageHeader
-        title="Habits"
-        description="Daily check-ins and a GitHub-style consistency view."
-      />
+      <PageHeader title="Habits" />
       <HabitsPanel habits={habits} days={HEATMAP_DAYS} />
     </DashboardShell>
   );

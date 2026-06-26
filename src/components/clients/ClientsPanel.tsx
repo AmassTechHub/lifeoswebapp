@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2, Users } from "lucide-react";
 
+import { getCurrencyOption } from "@/lib/currency";
+
 import {
   createClient,
   createDeliverable,
@@ -33,11 +35,12 @@ type Client = {
   }[];
 };
 
-export function ClientsPanel({ clients: initial }: { clients: Client[] }) {
+export function ClientsPanel({ clients: initial, currency = "GHS" }: { clients: Client[]; currency?: string }) {
   const router = useRouter();
   const [clients] = useState(initial);
   const [selectedId, setSelectedId] = useState(initial[0]?.id ?? "");
   const [pending, startTransition] = useTransition();
+  const sym = getCurrencyOption(currency).symbol;
 
   const selected = clients.find((c) => c.id === selectedId) ?? clients[0];
 
@@ -171,7 +174,7 @@ export function ClientsPanel({ clients: initial }: { clients: Client[] }) {
                           {d.dueDate
                             ? new Date(d.dueDate).toLocaleDateString()
                             : "No due date"}
-                          {d.amount != null ? ` · ₵${d.amount}` : ""}
+                          {d.amount != null ? ` · ${sym}${d.amount}` : ""}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">

@@ -14,7 +14,7 @@ type Mode = "task" | "expense" | null;
 const TASK_CATEGORIES = ["ACADEMICS", "CODING", "CONTENT", "CLIENTS", "PERSONAL"] as const;
 const EXPENSE_CATEGORIES = ["Food & Drinks", "Transport", "Education", "Data & Airtime", "Entertainment", "Health", "Other"];
 
-export function QuickAdd() {
+export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<Mode>(null);
@@ -161,7 +161,7 @@ export function QuickAdd() {
               </div>
               <div className="space-y-3 p-4">
                 <div className="flex gap-2">
-                  <span className="flex h-10 items-center rounded-xl border border-border bg-muted/30 px-3 text-sm font-semibold text-muted-foreground">₵</span>
+                  <span className="flex h-10 items-center rounded-xl border border-border bg-muted/30 px-3 text-sm font-semibold text-muted-foreground">{currencySymbol}</span>
                   <input
                     name="amount"
                     type="number"

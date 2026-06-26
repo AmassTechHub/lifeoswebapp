@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { Loader2, Search, Settings, Zap } from "lucide-react";
 
-import { navSections, settingsNavItem } from "@/config/navigation";
+import { navSections, settingsNavItem, type NavItem } from "@/config/navigation";
+import { Award, BarChart2, ClipboardList, CreditCard, Database, PenLine } from "lucide-react";
+
+const MORE_ITEMS: NavItem[] = [
+  { title: "Planner",   href: "/planner",   icon: PenLine },
+  { title: "Deadlines", href: "/deadlines", icon: ClipboardList },
+  { title: "Grades",    href: "/grades",    icon: Award },
+  { title: "Analytics", href: "/analytics", icon: BarChart2 },
+  { title: "Databases", href: "/databases", icon: Database },
+  { title: "Billing",   href: "/billing",   icon: CreditCard },
+];
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -122,10 +132,6 @@ export function CommandPalette() {
 
             <Command.Group
               heading="Actions"
-              className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground"
-            >
-              <Command.Item
-                value="run life engine"
                 onSelect={runEngineAction}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground cursor-pointer aria-selected:bg-accent/10 aria-selected:text-foreground transition-colors"
               >
