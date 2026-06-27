@@ -3,7 +3,6 @@ import {
   AlarmClock,
   CheckCircle2,
   Circle,
-  DollarSign,
   Flame,
   Sparkles,
   Target,

@@ -3,10 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  BookOpen, Brain, CheckCircle2, Circle, Hammer,
-  Loader2, Plus, Sparkles, Trash2, Zap,
-} from "lucide-react";
+import { BookOpen, Brain, CheckCircle2, Hammer, Loader2, Plus, Sparkles, Trash2, Zap } from "lucide-react";
 
 import { createTopic, deleteTopic, updateTopicProgress } from "@/lib/actions/topics";
 import { Button } from "@/components/ui/button";
@@ -174,7 +171,6 @@ export function TopicTracker({ topics: initial }: { topics: Topic[] }) {
   const inProgress = initial.filter(
     (t) => (t.learned || t.practiced || t.built) && !(t.learned && t.practiced && t.built)
   ).length;
-  const notStarted = total - mastered - inProgress;
 
   function handleCreate(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

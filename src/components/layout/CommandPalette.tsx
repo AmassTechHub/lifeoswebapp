@@ -130,6 +130,32 @@ export function CommandPalette() {
               </Command.Group>
             ))}
 
+            {/* More pages — always searchable via palette even if not in sidebar */}
+            <Command.Group
+              heading="More"
+              className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground"
+            >
+              {MORE_ITEMS.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Command.Item
+                    key={item.href}
+                    value={item.title}
+                    onSelect={() => runCommand(() => router.push(item.href))}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-muted-foreground cursor-pointer aria-selected:bg-accent/10 aria-selected:text-foreground transition-colors"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-foreground">{item.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{item.href}</p>
+                    </div>
+                  </Command.Item>
+                );
+              })}
+            </Command.Group>
+
             <Command.Group
               heading="Actions"
             >

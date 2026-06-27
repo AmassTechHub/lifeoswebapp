@@ -5,8 +5,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
-  AlertTriangle, BookOpen, CalendarClock,
-  GraduationCap, Layers, Loader2, Sparkles,
+  AlertTriangle, CalendarClock,
+  GraduationCap, Layers, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

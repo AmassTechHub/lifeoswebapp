@@ -377,7 +377,7 @@ export function FinancePanel({
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Convenience formatter — uses the user's currency setting
-  const fm = (amount: number, opts?: { decimals?: number }) =>
+  const fm = (amount: number, opts?: { decimals?: number; compact?: boolean }) =>
     formatMoney(amount, currency, opts);
 
   async function handleAddExpense(fd: FormData) {

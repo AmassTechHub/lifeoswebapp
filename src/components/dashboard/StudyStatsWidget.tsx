@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, Brain, Flame, GraduationCap, Layers, Play } from "lucide-react";
+import { Brain, Flame, GraduationCap, Layers, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type StudyStatsWidgetProps = {

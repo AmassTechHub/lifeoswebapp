@@ -9,7 +9,6 @@ import { getStudyCourses, getStudyStreak, getCourseTimeSecs, getDeadlines } from
 import { getTopics } from "@/lib/actions/topics";
 import { getUpcomingExams } from "@/lib/study/exam-plan";
 import { getFlashcardsDueCount } from "@/lib/study/today";
-import { getUserPrefs } from "@/lib/user-prefs";
 import { requireSession } from "@/lib/session";
 
 export default async function LearningPage() {
