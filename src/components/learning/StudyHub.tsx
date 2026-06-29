@@ -126,8 +126,6 @@ export function StudyHub({
   const [planningStudy, setPlanningStudy] = useState(false);
   const [message, setMessage] = useState("");
   const [dragOver, setDragOver] = useState(false);
-  const [uploadTitle, setUploadTitle] = useState("");
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [showSetup, setShowSetup] = useState(initial.length === 0);
   const [examPrepNonce, setExamPrepNonce] = useState(0);
 
@@ -243,12 +241,24 @@ export function StudyHub({
     }
   }
 
-  async function handleUpload(file: File, title: string) {
-    if (!selected) return;
+  // Multi-file upload state
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadTitle, setUploadTitle] = useState("");
+
+  async function handleUpload(files: File[], title: string) {
+    if (!selected || files.length === 0) return;
     const fd = new FormData();
     fd.set("courseId", selected.id);
-    fd.set("file", file);
     if (title.trim()) fd.set("title", title.trim());
+
+    if (files.length === 1) {
+      // Single-file path (backwards compat)
+      fd.set("file", files[0]);
+    } else {
+      // Multi-file: append as files[]
+      for (const f of files) fd.append("files[]", f);
+    }
+
     setUploading(true);
     setMessage("");
     try {
@@ -257,10 +267,18 @@ export function StudyHub({
       if (!res.ok) {
         toast.error(data.error ?? "Upload failed");
       } else {
-        setUploadFile(null);
+        const uploaded = data.uploaded ?? 1;
+        const failed   = data.failed ?? 0;
+        setUploadFiles([]);
         setUploadTitle("");
         router.refresh();
-        toast.success("Uploaded! Generating flashcards...");
+
+        if (failed > 0) {
+          toast.warning(`${uploaded} uploaded, ${failed} failed. Check file types.`);
+        } else {
+          toast.success(`${uploaded} file${uploaded !== 1 ? "s" : ""} uploaded! Generating flashcards…`);
+        }
+
         const genRes = await fetch("/api/study/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -273,7 +291,7 @@ export function StudyHub({
           });
           router.refresh();
         } else {
-          toast.success("File uploaded. Use Study Brain to generate flashcards.");
+          toast.success("Files uploaded. Use Study Brain to generate flashcards.");
         }
       }
     } catch {
@@ -297,8 +315,8 @@ export function StudyHub({
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) setUploadFile(file);
+    const dropped = Array.from(e.dataTransfer.files ?? []);
+    if (dropped.length > 0) setUploadFiles((prev) => [...prev, ...dropped]);
   }
 
   const TABS: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
@@ -675,69 +693,108 @@ export function StudyHub({
 
               {tab === "materials" && (
                 <div className="space-y-4">
-                  {/* Upload zone */}
+                  {/* Multi-file upload zone */}
                   <div
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                     onDragLeave={() => setDragOver(false)}
                     onDrop={handleDrop}
                     className={cn(
-                      "relative rounded-2xl border-2 border-dashed p-6 text-center transition-all",
+                      "rounded-2xl border-2 border-dashed p-6 text-center transition-all",
                       dragOver
                         ? "border-accent bg-accent/10"
-                        : uploadFile
+                        : uploadFiles.length > 0
                           ? "border-success/50 bg-success/5"
                           : "border-border/60 bg-muted/20 hover:border-accent/40 hover:bg-accent/5"
                     )}
                   >
-                    {uploadFile ? (
-                      <div className="flex flex-col items-center gap-2">
-                        {uploadFile.type.startsWith("image/") ? (
-                          <FileImage className="h-8 w-8 text-success" />
-                        ) : (
-                          <FileText className="h-8 w-8 text-success" />
-                        )}
-                        <p className="text-sm font-medium text-foreground">{uploadFile.name}</p>
-                        <p className="text-xs text-muted-foreground">{(uploadFile.size / 1024).toFixed(0)} KB</p>
-                        <div className="mt-2 flex w-full max-w-xs flex-col gap-2">
+                    {uploadFiles.length > 0 ? (
+                      <div className="space-y-3">
+                        {/* File list preview */}
+                        <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                          {uploadFiles.map((f, i) => (
+                            <div key={i} className="flex items-center gap-2 rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+                              {f.type.startsWith("image/") ? (
+                                <FileImage className="h-4 w-4 shrink-0 text-blue-400" />
+                              ) : (
+                                <FileText className="h-4 w-4 shrink-0 text-red-400" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{f.name}</span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground/60">{(f.size / 1024).toFixed(0)} KB</span>
+                              <button
+                                type="button"
+                                onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                                className="shrink-0 rounded p-0.5 text-muted-foreground/40 hover:text-danger"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Optional label + action buttons */}
+                        <div className="flex flex-col items-center gap-2">
                           <Input
                             value={uploadTitle}
                             onChange={(e) => setUploadTitle(e.target.value)}
-                            placeholder="Label (e.g. Week 4 slides)"
-                            className="h-8 text-sm"
+                            placeholder={uploadFiles.length > 1 ? "Batch label (optional)" : "Label (e.g. Week 4 slides)"}
+                            className="h-8 max-w-xs text-sm"
                           />
                           <div className="flex gap-2">
                             <Button
                               size="sm"
-                              className="flex-1 gap-1.5"
+                              className="gap-1.5"
                               disabled={uploading}
-                              onClick={() => handleUpload(uploadFile, uploadTitle)}
+                              onClick={() => handleUpload(uploadFiles, uploadTitle)}
                             >
-                              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                              {uploading ? "Uploading..." : "Upload"}
+                              {uploading
+                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                : <Upload className="h-3.5 w-3.5" />
+                              }
+                              {uploading
+                                ? "Uploading…"
+                                : `Upload ${uploadFiles.length} file${uploadFiles.length !== 1 ? "s" : ""}`
+                              }
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => setUploadFile(null)}>
-                              <X className="h-3.5 w-3.5" />
+                            <Button size="sm" variant="outline" onClick={() => setUploadFiles([])}>
+                              Clear
                             </Button>
                           </div>
                         </div>
+                        {/* Add more files */}
+                        <label className="inline-flex cursor-pointer items-center gap-1 text-xs text-accent hover:underline">
+                          <Plus className="h-3 w-3" />
+                          Add more files
+                          <input
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.webp,.ppt,.pptx"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const picked = Array.from(e.target.files ?? []);
+                              if (picked.length) setUploadFiles((prev) => [...prev, ...picked]);
+                            }}
+                          />
+                        </label>
                       </div>
                     ) : (
                       <>
                         <Upload className="mx-auto h-8 w-8 text-muted-foreground/40" />
                         <p className="mt-2 text-sm font-medium text-muted-foreground">
-                          Drag & drop your lecture slides here
+                          Drag & drop lecture slides here
                         </p>
-                        <p className="text-xs text-muted-foreground/50 mt-1">PDF, PNG, JPG, WEBP supported</p>
+                        <p className="text-xs text-muted-foreground/50 mt-1">
+                          PDF, PNG, JPG, WEBP, PPT, PPTX · up to 12 MB each · up to 20 files at once
+                        </p>
                         <label className="mt-4 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:border-accent/40 hover:text-foreground transition-colors">
                           <Plus className="h-3.5 w-3.5" />
                           Browse files
                           <input
                             type="file"
-                            accept=".pdf,.png,.jpg,.jpeg,.webp"
+                            accept=".pdf,.png,.jpg,.jpeg,.webp,.ppt,.pptx"
+                            multiple
                             className="hidden"
                             onChange={(e) => {
-                              const f = e.target.files?.[0];
-                              if (f) setUploadFile(f);
+                              const picked = Array.from(e.target.files ?? []);
+                              if (picked.length) setUploadFiles(picked);
                             }}
                           />
                         </label>
@@ -816,9 +873,9 @@ export function StudyHub({
                     </div>
                   )}
 
-                  {selected.materials.length === 0 && !uploadFile && (
+                  {selected.materials.length === 0 && uploadFiles.length === 0 && (
                     <p className="text-center text-sm text-muted-foreground">
-                      Upload your professor&apos;s lecture slides — the AI Tutor can teach, quiz, and predict exam topics from them.
+                      Upload your lecture slides — the AI Tutor can teach, quiz, and predict exam topics from them.
                     </p>
                   )}
                 </div>

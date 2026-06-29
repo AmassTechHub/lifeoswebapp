@@ -193,6 +193,9 @@ model Goal {
   children    Goal[]    @relation("GoalHierarchy")
   targetDate  DateTime?
   completed   Boolean   @default(false)
+  // Progress tracking: 0–100 (optional — not all goals need numeric progress)
+  progress    Int?      @default(0)
+  progressNote String?  // latest progress update text
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

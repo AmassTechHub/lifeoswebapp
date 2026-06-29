@@ -56,3 +56,18 @@ export async function getGoals(userId: string) {
     orderBy: [{ completed: "asc" }, { level: "asc" }, { createdAt: "desc" }],
   });
 }
+
+export async function updateGoalProgress(id: string, progress: number, progressNote?: string) {
+  const userId = await requireUserId();
+  await prisma.goal.updateMany({
+    where: { id, userId },
+    data: {
+      progress: Math.max(0, Math.min(100, progress)),
+      progressNote: progressNote?.trim() || null,
+      completed: progress >= 100,
+    },
+  });
+  revalidatePath("/goals");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

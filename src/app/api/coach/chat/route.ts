@@ -158,6 +158,7 @@ function buildSystemPrompt(user: {
   parts.push(
     "You help with: daily planning, study (notes, summaries, flashcards), content creation, tasks, goals, habits, and finance awareness."
   );
+  parts.push("You have MEMORY — you can see recent daily/weekly summaries in the context. Reference them to give continuity.");
   if (user.primaryGoal) {
     parts.push(`Their current primary goal: "${user.primaryGoal}".`);
   }
@@ -183,6 +184,7 @@ function buildSystemPrompt(user: {
   parts.push("If asked to plan a day, use bullet points with times.");
   parts.push("If asked for study help, explain clearly like a tutor.");
   parts.push("If asked for content, suggest hooks, outlines, or script beats.");
+  parts.push("You work for users worldwide — don't assume any specific country, currency, or context unless it's in the user's profile.");
   parts.push("");
   parts.push("TOOLS — you can act directly in Life OS:");
   parts.push("  create_task           → 'add a task', 'remind me to X', 'I need to do X'");
@@ -203,6 +205,7 @@ function buildSystemPrompt(user: {
   parts.push(
     "  • NEVER say 'I don't have enough information' or 'my knowledge is limited' for anything time-sensitive, current, or about real-world facts — call web_search instead and answer from the results."
   );
+  parts.push("  • Reference RECENT HISTORY when relevant — if they struggled with habits last week, acknowledge it.");
   parts.push("  • After tool use, give ONE short confirmation sentence. The UI shows what was created.");
   return parts.join("\n");
 }
@@ -476,9 +479,23 @@ export async function POST(request: Request) {
     getUserContextSummary(session.user.id),
     prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { openAiKey: true, name: true, primaryGoal: true, useCase: true, workSchedule: true },
+      select: {
+        openAiKey: true,
+        name: true,
+        primaryGoal: true,
+        useCase: true,
+        workSchedule: true,
+      },
     }),
   ]);
+
+  // Fetch recent cycle logs for coach memory (last 7 days of context)
+  const cycleMemory = await prisma.lifeCycleLog.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: { type: true, summary: true, date: true },
+  });
 
   const apiKey = (userRecord?.openAiKey?.trim() || process.env.ANTHROPIC_API_KEY?.trim()) ?? "";
   if (!apiKey) {
@@ -507,7 +524,14 @@ export async function POST(request: Request) {
   ];
 
   const allActions: ActionRecord[] = [];
-  const fullSystem = `${systemPrompt}\n\nLive context:\n${JSON.stringify(context)}`;
+  const memorySection = cycleMemory.length > 0
+    ? "\n\nRECENT HISTORY (your memory of this user):\n" +
+      cycleMemory
+        .map((c) => `  [${c.type} ${new Date(c.date).toLocaleDateString()}] ${c.summary}`)
+        .join("\n")
+    : "";
+
+  const fullSystem = `${systemPrompt}\n\nLive context:\n${JSON.stringify(context)}${memorySection}`;
 
   async function callAnthropic(
     msgs: typeof chatMessages

@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { createGoal, deleteGoal, toggleGoalComplete } from "@/lib/actions/goals";
+import { createGoal, deleteGoal, toggleGoalComplete, updateGoalProgress } from "@/lib/actions/goals";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -33,6 +33,9 @@ type Goal = {
   description: string | null;
   level: string;
   completed: boolean;
+  progress: number | null;
+  progressNote: string | null;
+  targetDate: Date | string | null;
 };
 
 const LEVELS = [
@@ -264,35 +267,91 @@ function GoalRow({
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const [, startTransition] = useTransition();
+  const router = useRouter();
+  const pct = goal.progress ?? 0;
+
+  function handleProgressChange(newPct: number) {
+    startTransition(async () => {
+      await updateGoalProgress(goal.id, newPct);
+      router.refresh();
+    });
+  }
+
+  const daysLeft = goal.targetDate
+    ? Math.round((new Date(goal.targetDate).getTime() - Date.now()) / 86_400_000)
+    : null;
+
   return (
-    <div className="group flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/40">
-      <button
-        type="button"
-        onClick={onToggle}
-        className={cn(
-          "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
-          goal.completed
-            ? `border-transparent ${level.bg}`
-            : "border-border hover:border-accent"
-        )}
-      >
-        {goal.completed && <Check className={cn("h-3 w-3", level.color)} />}
-      </button>
-      <div className="flex-1 min-w-0">
-        <p className={cn("text-sm font-medium", goal.completed && "line-through text-muted-foreground")}>
-          {goal.title}
-        </p>
-        {goal.description && (
-          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{goal.description}</p>
-        )}
+    <div className="group space-y-2 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/40">
+      <div className="flex items-start gap-3">
+        <button
+          type="button"
+          onClick={onToggle}
+          className={cn(
+            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all",
+            goal.completed
+              ? `border-transparent ${level.bg}`
+              : "border-border hover:border-accent"
+          )}
+        >
+          {goal.completed && <Check className={cn("h-3 w-3", level.color)} />}
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className={cn("text-sm font-medium", goal.completed && "line-through text-muted-foreground")}>
+            {goal.title}
+          </p>
+          {goal.description && (
+            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{goal.description}</p>
+          )}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {goal.targetDate && (
+              <span className={cn(
+                "text-[10px] font-medium",
+                daysLeft !== null && daysLeft < 0 ? "text-danger" :
+                daysLeft !== null && daysLeft <= 7 ? "text-warning" :
+                "text-muted-foreground/60"
+              )}>
+                {daysLeft === null ? "" :
+                 daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` :
+                 daysLeft === 0 ? "Due today" :
+                 `${daysLeft}d left`}
+              </span>
+            )}
+            {goal.progressNote && (
+              <span className="text-[10px] text-muted-foreground/50 truncate max-w-48">
+                {goal.progressNote}
+              </span>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="shrink-0 rounded-md p-1 text-transparent transition-all group-hover:text-muted-foreground/40 hover:bg-danger/10 hover:!text-danger"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <button
-        type="button"
-        onClick={onDelete}
-        className="shrink-0 rounded-md p-1 text-transparent transition-all group-hover:text-muted-foreground/40 hover:text-danger! hover:bg-danger/10"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+
+      {/* Progress bar with click-to-update */}
+      {!goal.completed && (
+        <div className="flex items-center gap-2 pl-8">
+          <div className="relative flex-1 h-1.5 rounded-full bg-muted/50 overflow-hidden cursor-pointer group/bar"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const newPct = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+              handleProgressChange(Math.max(0, Math.min(100, newPct)));
+            }}
+          >
+            <div
+              className={cn("h-full rounded-full transition-all duration-300", level.dot)}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground/60 w-7 text-right">{pct}%</span>
+        </div>
+      )}
     </div>
   );
 }

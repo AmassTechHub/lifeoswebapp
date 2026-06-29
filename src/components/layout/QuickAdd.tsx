@@ -3,16 +3,20 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckSquare, DollarSign, Loader2, Plus, X } from "lucide-react";
+import { AlarmClock, CheckSquare, DollarSign, Loader2, Plus, X } from "lucide-react";
 
 import { createTask } from "@/lib/actions/tasks";
 import { createExpense } from "@/lib/actions/finance";
+import { createDeadlineQuick } from "@/lib/actions/deadlines";
 import { cn } from "@/lib/utils";
 
-type Mode = "task" | "expense" | null;
+type Mode = "task" | "expense" | "deadline" | null;
 
 const TASK_CATEGORIES = ["ACADEMICS", "CODING", "CONTENT", "CLIENTS", "PERSONAL"] as const;
-const EXPENSE_CATEGORIES = ["Food & Drinks", "Transport", "Education", "Data & Airtime", "Entertainment", "Health", "Other"];
+const EXPENSE_CATEGORIES = [
+  "Food & Drinks", "Transport", "Education", "Entertainment",
+  "Health", "Utilities", "Subscriptions", "Personal Care", "Other",
+];
 
 export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }) {
   const router = useRouter();
@@ -37,6 +41,19 @@ export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }
       const res = await createExpense(fd);
       if (res?.error) { toast.error(res.error); return; }
       toast.success("Expense logged");
+      close();
+      router.refresh();
+    });
+  }
+
+  async function handleDeadline(fd: FormData) {
+    const title   = String(fd.get("title") ?? "").trim();
+    const dueDate = String(fd.get("dueDate") ?? "").trim();
+    const type    = String(fd.get("type") ?? "ASSIGNMENT");
+    startTransition(async () => {
+      const res = await createDeadlineQuick(title, dueDate, type);
+      if (res?.error) { toast.error(res.error); return; }
+      toast.success("Deadline added");
       close();
       router.refresh();
     });
@@ -105,6 +122,19 @@ export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }
                     <p className="text-xs text-muted-foreground">Quick expense entry</p>
                   </div>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("deadline")}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-muted/50"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/15">
+                    <AlarmClock className="h-4 w-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Add deadline</p>
+                    <p className="text-xs text-muted-foreground">Exam, assignment, or project</p>
+                  </div>
+                </button>
               </div>
             </div>
           ) : mode === "task" ? (
@@ -147,7 +177,7 @@ export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }
                 </button>
               </div>
             </form>
-          ) : (
+          ) : mode === "expense" ? (
             /* Expense form */
             <form
               onSubmit={(e) => { e.preventDefault(); handleExpense(new FormData(e.currentTarget)); }}
@@ -196,7 +226,55 @@ export function QuickAdd({ currencySymbol = "₵" }: { currencySymbol?: string }
                 </button>
               </div>
             </form>
-          )}
+          ) : mode === "deadline" ? (
+            /* Deadline form */
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleDeadline(new FormData(e.currentTarget)); }}
+              className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-xl"
+            >
+              <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
+                <p className="text-sm font-semibold">Add deadline</p>
+                <button type="button" onClick={() => setMode(null)} className="rounded-lg p-1 text-muted-foreground hover:bg-muted">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="space-y-3 p-4">
+                <input
+                  name="title"
+                  required
+                  autoFocus
+                  placeholder="e.g. Midterm Exam, Assignment 3…"
+                  className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+                <select
+                  name="type"
+                  defaultValue="ASSIGNMENT"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:border-accent focus:outline-none"
+                >
+                  <option value="ASSIGNMENT">Assignment</option>
+                  <option value="EXAM">Exam</option>
+                  <option value="PROJECT">Project</option>
+                  <option value="QUIZ">Quiz</option>
+                  <option value="LAB">Lab</option>
+                  <option value="OTHER">Other</option>
+                </select>
+                <input
+                  name="dueDate"
+                  type="date"
+                  required
+                  className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                />
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600 disabled:opacity-60"
+                >
+                  {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlarmClock className="h-4 w-4" />}
+                  Add deadline
+                </button>
+              </div>
+            </form>
+          ) : null}
         </div>
       )}
     </>

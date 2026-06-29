@@ -297,7 +297,12 @@ export async function getTodaySchedule(userId: string) {
   const dayEnd = endOfDay(now);
 
   const events = await prisma.calendarEvent.findMany({
-    where: { userId, startAt: { gte: dayStart, lt: dayEnd } },
+    where: {
+      userId,
+      startAt: { gte: dayStart, lt: dayEnd },
+      // Filter out internal sentinel events that should never appear in the UI
+      NOT: { title: { startsWith: "__" } },
+    },
     orderBy: { startAt: "asc" },
   });
 

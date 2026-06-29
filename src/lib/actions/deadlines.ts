@@ -71,3 +71,15 @@ export async function deleteDeadline(id: string) {
   revalidatePath("/deadlines");
   return { ok: true };
 }
+
+// Lightweight version for the QuickAdd FAB — title + dueDate only
+export async function createDeadlineQuick(title: string, dueDate: string, type = "ASSIGNMENT") {
+  const userId = await requireUserId();
+  if (!title.trim() || !dueDate) return { error: "Title and due date are required" };
+  await prisma.deadline.create({
+    data: { userId, title: title.trim(), type, dueDate: new Date(dueDate) },
+  });
+  revalidatePath("/deadlines");
+  revalidatePath("/dashboard");
+  return { ok: true };
+}

@@ -11,48 +11,46 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-import { ExamModePanel }       from "@/components/dashboard/ExamModePanel";
-import { TodayAgenda }         from "@/components/dashboard/TodayAgenda";
-import { TodaysSchedule }      from "@/components/dashboard/TodaysSchedule";
-import { XPBadge }             from "@/components/dashboard/XPBadge";
-import { DashboardShell }      from "@/components/layout/DashboardShell";
-import { DashboardRightPanel } from "@/components/dashboard/DashboardRightPanel";
-import { getTodaySchedule }    from "@/lib/automation/generate-day";
-import { getTodayAgenda }      from "@/lib/data/today-agenda";
-import { getUpcomingExams }    from "@/lib/study/exam-plan";
+import { ExamModePanel }         from "@/components/dashboard/ExamModePanel";
+import { GettingStarted, getGettingStartedSteps } from "@/components/dashboard/GettingStarted";
+import { TodayAgenda }           from "@/components/dashboard/TodayAgenda";
+import { TodaysSchedule }        from "@/components/dashboard/TodaysSchedule";
+import { XPBadge }               from "@/components/dashboard/XPBadge";
+import { AutoPlanButton }        from "@/components/dashboard/AutoPlanButton";
+import { DashboardShell }        from "@/components/layout/DashboardShell";
+import { DashboardRightPanel }   from "@/components/dashboard/DashboardRightPanel";
+import { getTodaySchedule }      from "@/lib/automation/generate-day";
+import { getTodayAgenda }        from "@/lib/data/today-agenda";
+import { getUpcomingExams }      from "@/lib/study/exam-plan";
 import { runLifeEngineIfNeeded } from "@/lib/engine/life-engine";
-import { requireSession }      from "@/lib/session";
+import { prisma }                from "@/lib/prisma";
+import { requireSession }        from "@/lib/session";
 import { getFirstName, getGreeting } from "@/lib/user";
-import { getUserPrefs }        from "@/lib/user-prefs";
+import { getUserPrefs }          from "@/lib/user-prefs";
 
 // ── Role-aware quick links ─────────────────────────────────────────────────
 type QuickLink = { href: string; label: string; icon: typeof ListChecks; color: string; roles?: string[] };
 
 const ALL_QUICK_LINKS: QuickLink[] = [
-  // Always shown
-  { href: "/tasks",     label: "Tasks",    icon: ListChecks,    color: "text-accent" },
-  { href: "/calendar",  label: "Calendar", icon: Calendar,      color: "text-purple-400" },
-  { href: "/goals",     label: "Goals",    icon: Target,        color: "text-pink-400" },
-  { href: "/habits",    label: "Habits",   icon: Flame,         color: "text-orange-400" },
-  { href: "/finance",   label: "Finance",  icon: DollarSign,    color: "text-green-400" },
-  // Student-only
-  { href: "/learning",  label: "Study",    icon: GraduationCap, color: "text-emerald-400", roles: ["student"] },
-  { href: "/grades",    label: "Grades",   icon: TrendingUp,    color: "text-sky-400",     roles: ["student"] },
-  { href: "/deadlines", label: "Deadlines",icon: Target,        color: "text-amber-400",   roles: ["student"] },
-  // Creator / Professional
-  { href: "/content",   label: "Content",  icon: Clapperboard,  color: "text-violet-400",  roles: ["creator"] },
-  { href: "/clients",   label: "Clients",  icon: Briefcase,     color: "text-amber-400",   roles: ["professional", "creator"] },
+  { href: "/tasks",     label: "Tasks",     icon: ListChecks,    color: "text-accent" },
+  { href: "/calendar",  label: "Calendar",  icon: Calendar,      color: "text-purple-400" },
+  { href: "/goals",     label: "Goals",     icon: Target,        color: "text-pink-400" },
+  { href: "/habits",    label: "Habits",    icon: Flame,         color: "text-orange-400" },
+  { href: "/finance",   label: "Finance",   icon: DollarSign,    color: "text-green-400" },
+  { href: "/learning",  label: "Study",     icon: GraduationCap, color: "text-emerald-400", roles: ["student"] },
+  { href: "/grades",    label: "Grades",    icon: TrendingUp,    color: "text-sky-400",     roles: ["student"] },
+  { href: "/deadlines", label: "Deadlines", icon: Target,        color: "text-amber-400",   roles: ["student"] },
+  { href: "/content",   label: "Content",   icon: Clapperboard,  color: "text-violet-400",  roles: ["creator"] },
+  { href: "/clients",   label: "Clients",   icon: Briefcase,     color: "text-amber-400",   roles: ["professional", "creator"] },
 ];
 
 function getQuickLinks(useCases: string[]): QuickLink[] {
   const noRole = useCases.length === 0;
-  // Filter to relevant links, then cap at 8 for the grid
-  const links = ALL_QUICK_LINKS.filter((l) => {
+  return ALL_QUICK_LINKS.filter((l) => {
     if (!l.roles || l.roles.length === 0) return true;
     if (noRole) return true;
     return l.roles.some((r) => useCases.includes(r));
-  });
-  return links.slice(0, 8);
+  }).slice(0, 8);
 }
 
 export default async function DashboardPage() {
@@ -61,11 +59,26 @@ export default async function DashboardPage() {
 
   await runLifeEngineIfNeeded(session.user.id);
 
-  const [agenda, scheduleRaw, upcomingExams, prefs] = await Promise.all([
+  const [agenda, scheduleRaw, upcomingExams, prefs, counts] = await Promise.all([
     getTodayAgenda(session.user.id),
     getTodaySchedule(session.user.id),
     getUpcomingExams(session.user.id, 14),
     getUserPrefs(session.user.id),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        _count: {
+          select: {
+            tasks: true,
+            habits: true,
+            goals: true,
+            studyCourses: true,
+            expenses: true,
+            calendarEvents: true,
+          },
+        },
+      },
+    }),
   ]);
 
   const schedule = scheduleRaw.map((e) => ({
@@ -91,7 +104,6 @@ export default async function DashboardPage() {
 
   const quickLinks = getQuickLinks(prefs.useCases);
 
-  // Personalised greeting suffix based on primary use-case
   const contextHint = prefs.useCases.includes("student")
     ? " 📚"
     : prefs.useCases.includes("professional")
@@ -100,10 +112,26 @@ export default async function DashboardPage() {
     ? " 🎬"
     : " 👋";
 
+  // Build getting-started steps
+  const c = counts?._count;
+  const gettingStartedSteps = await getGettingStartedSteps({
+    hasTask:     (c?.tasks ?? 0) > 0,
+    hasHabit:    (c?.habits ?? 0) > 0,
+    hasGoal:     (c?.goals ?? 0) > 0,
+    hasCourse:   (c?.studyCourses ?? 0) > 0,
+    hasExpense:  (c?.expenses ?? 0) > 0,
+    hasEvent:    (c?.calendarEvents ?? 0) > 0,
+  });
+  const totalDone = gettingStartedSteps.filter((s) => s.done).length;
+  const showGettingStarted = totalDone < gettingStartedSteps.length;
+
+  // Show auto-plan prompt if no SYSTEM schedule events today
+  const hasAutoSchedule = schedule.some((e) => e.title.startsWith("Study:") || e.title.startsWith("Task:"));
+
   return (
     <DashboardShell>
       {/* ── Header ──────────────────────────────────────────────── */}
-      <header className="mb-6 flex items-end justify-between gap-4">
+      <header className="mb-5 flex items-start justify-between gap-4">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/40">
             {today}
@@ -117,11 +145,22 @@ export default async function DashboardPage() {
             </p>
           )}
         </div>
-        <XPBadge className="hidden sm:flex" />
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Auto-plan CTA — shown when day has no auto blocks yet */}
+          {!hasAutoSchedule && <AutoPlanButton />}
+          <XPBadge className="hidden sm:flex" />
+        </div>
       </header>
 
+      {/* ── Getting started (new users only) ────────────────────── */}
+      {showGettingStarted && (
+        <div className="mb-5">
+          <GettingStarted steps={gettingStartedSteps} />
+        </div>
+      )}
+
       {/* ── Quick-access shortcuts (role-aware) ─────────────────── */}
-      <div className={`mb-6 grid gap-2 grid-cols-4 ${quickLinks.length > 4 ? "sm:grid-cols-8" : "sm:grid-cols-4"}`}>
+      <div className={`mb-5 grid gap-2 grid-cols-4 ${quickLinks.length > 4 ? "sm:grid-cols-8" : "sm:grid-cols-4"}`}>
         {quickLinks.map(({ href, label, icon: Icon, color }) => (
           <Link
             key={href}
@@ -140,21 +179,16 @@ export default async function DashboardPage() {
 
       {/* ── Main 2-column grid ──────────────────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_320px]">
-
-        {/* ── Left column ─────────────────────────────────────── */}
         <div className="space-y-4 min-w-0">
           <TodayAgenda overdue={agenda.overdue} today={agenda.today} />
           {examPanelItems.length > 0 && <ExamModePanel exams={examPanelItems} />}
           <TodaysSchedule schedule={schedule} />
         </div>
-
-        {/* ── Right column (desktop) ──────────────────────────── */}
         <div className="hidden lg:block">
           <DashboardRightPanel userId={session.user.id} />
         </div>
       </div>
 
-      {/* Mobile: right-panel widgets stacked below */}
       <div className="mt-4 lg:hidden">
         <DashboardRightPanel userId={session.user.id} />
       </div>
