@@ -37,9 +37,8 @@ export function AppLayoutClient({
         {/* Mobile top bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/90 px-4 backdrop-blur-md lg:hidden">
           <div className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-[11px] font-black text-white shadow-sm shadow-accent/30">
-              L
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icon.svg" alt="Life OS" className="h-7 w-7 rounded-lg" />
             <span className="text-[14px] font-semibold tracking-tight text-foreground">
               Life OS
             </span>

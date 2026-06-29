@@ -95,9 +95,9 @@ export function AppSidebar({ isOpen = false, onClose, useCases = [] }: AppSideba
       {/* ── Logo bar ──────────────────────────────────────────────── */}
       <div className="flex h-14 items-center gap-2 px-4 border-b border-border/30">
         <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2 group">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent text-[11px] font-black text-white shadow-sm shadow-accent/30">
-            L
-          </span>
+          {/* Use the actual SVG icon */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon.svg" alt="Life OS" className="h-7 w-7 rounded-lg" />
           <span className="text-[14px] font-semibold tracking-tight text-foreground">Life OS</span>
         </Link>
         <button

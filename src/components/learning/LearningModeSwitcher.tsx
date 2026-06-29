@@ -37,14 +37,6 @@ export function LearningModeSwitcher({
         >
           <GraduationCap className="h-4 w-4" />
           Courses
-          {hasCourses && (
-            <span className={cn(
-              "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-              mode === "courses" ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"
-            )}>
-              Structured
-            </span>
-          )}
         </button>
         <button
           type="button"
@@ -58,23 +50,8 @@ export function LearningModeSwitcher({
         >
           <BookOpen className="h-4 w-4" />
           Topics
-          {hasTopics && (
-            <span className={cn(
-              "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-              mode === "topics" ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"
-            )}>
-              Self-learner
-            </span>
-          )}
         </button>
       </div>
-
-      {/* Mode description */}
-      <p className="text-xs text-muted-foreground/60 -mt-2">
-        {mode === "courses"
-          ? "Structured university/school courses — notes, slides, flashcards, timetable, AI tutor."
-          : "Track topics you're learning independently — any subject, any pace, no schedule needed."}
-      </p>
 
       {/* Content */}
       {mode === "courses" ? studyHub : topicTracker}

@@ -59,26 +59,24 @@ export default async function DashboardPage() {
 
   await runLifeEngineIfNeeded(session.user.id);
 
-  const [agenda, scheduleRaw, upcomingExams, prefs, counts] = await Promise.all([
+  const [agenda, scheduleRaw, upcomingExams, prefs, manualEventCount, userCounts, topicCount] = await Promise.all([
     getTodayAgenda(session.user.id),
     getTodaySchedule(session.user.id),
     getUpcomingExams(session.user.id, 14),
     getUserPrefs(session.user.id),
+    // Only count MANUAL events — system events are created on first load
+    // and would falsely mark "Add a calendar event" as done
+    prisma.calendarEvent.count({
+      where: { userId: session.user.id, source: "MANUAL" },
+    }),
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
-        _count: {
-          select: {
-            tasks: true,
-            habits: true,
-            goals: true,
-            studyCourses: true,
-            expenses: true,
-            calendarEvents: true,
-          },
-        },
+        _count: { select: { tasks: true, habits: true, goals: true, studyCourses: true, expenses: true } },
       },
     }),
+    // Count LearningTopics so "Set up courses or topics" works for self-learners too
+    prisma.learningTopic.count({ where: { userId: session.user.id } }),
   ]);
 
   const schedule = scheduleRaw.map((e) => ({
@@ -113,14 +111,14 @@ export default async function DashboardPage() {
     : " 👋";
 
   // Build getting-started steps
-  const c = counts?._count;
+  const c = userCounts?._count;
   const gettingStartedSteps = await getGettingStartedSteps({
-    hasTask:     (c?.tasks ?? 0) > 0,
-    hasHabit:    (c?.habits ?? 0) > 0,
-    hasGoal:     (c?.goals ?? 0) > 0,
-    hasCourse:   (c?.studyCourses ?? 0) > 0,
-    hasExpense:  (c?.expenses ?? 0) > 0,
-    hasEvent:    (c?.calendarEvents ?? 0) > 0,
+    hasTask:    (c?.tasks ?? 0) > 0,
+    hasHabit:   (c?.habits ?? 0) > 0,
+    hasGoal:    (c?.goals ?? 0) > 0,
+    hasCourse:  (c?.studyCourses ?? 0) > 0 || topicCount > 0,
+    hasExpense: (c?.expenses ?? 0) > 0,
+    hasEvent:   manualEventCount > 0,
   });
   const totalDone = gettingStartedSteps.filter((s) => s.done).length;
   const showGettingStarted = totalDone < gettingStartedSteps.length;

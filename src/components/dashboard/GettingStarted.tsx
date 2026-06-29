@@ -37,7 +37,7 @@ export function GettingStarted({
           <div>
             <p className="text-sm font-semibold text-foreground">Get started with Life OS</p>
             <p className="text-[11px] text-muted-foreground/60">
-              {doneCount} of {steps.length} steps done
+              {steps.length - doneCount} step{steps.length - doneCount !== 1 ? "s" : ""} left
             </p>
           </div>
         </div>
@@ -61,31 +61,19 @@ export function GettingStarted({
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
-        {steps.map((step) => {
+        {steps.filter((s) => !s.done).map((step) => {
           const Icon = step.icon;
           return (
             <Link
               key={step.id}
-              href={step.done ? "#" : step.href}
-              className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-all ${
-                step.done
-                  ? "border-border/30 bg-background/30 opacity-50 cursor-default"
-                  : "border-border/50 bg-background/50 hover:border-accent/30 hover:bg-accent/5"
-              }`}
+              href={step.href}
+              className="flex items-start gap-3 rounded-xl border border-border/50 bg-background/50 px-3 py-2.5 transition-all hover:border-accent/30 hover:bg-accent/5"
             >
-              <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 ${
-                step.done ? "bg-emerald-500/15" : "bg-muted/50"
-              }`}>
-                {step.done ? (
-                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                ) : (
-                  <Icon className={`h-3.5 w-3.5 ${step.color}`} />
-                )}
+              <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg mt-0.5 bg-muted/50">
+                <Icon className={`h-3.5 w-3.5 ${step.color}`} />
               </div>
               <div className="min-w-0">
-                <p className={`text-xs font-semibold ${step.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                  {step.title}
-                </p>
+                <p className="text-xs font-semibold text-foreground">{step.title}</p>
                 <p className="text-[10px] text-muted-foreground/60 truncate">{step.description}</p>
               </div>
             </Link>

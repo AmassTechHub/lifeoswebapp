@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Layers,
   Loader2,
+  PenLine,
   Play,
   Plus,
   ScanText,
@@ -26,7 +27,9 @@ import {
 import Link from "next/link";
 
 import { AITutorPanel } from "@/components/learning/AITutorPanel";
+import { CourseIntelligence } from "@/components/learning/CourseIntelligence";
 import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
+import { HandwritingCanvas } from "@/components/learning/HandwritingCanvas";
 import { ExamCountdown } from "@/components/learning/ExamCountdown";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
 import { SlideReader } from "@/components/learning/SlideReader";
@@ -100,7 +103,7 @@ type Deadline = {
   course: { name: string; color: string } | null;
 };
 
-type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable" | "exams";
+type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable" | "exams" | "handwrite";
 
 type StreakData = { current: number; longest: number; totalSessions: number; totalMinutes: number };
 
@@ -323,27 +326,19 @@ export function StudyHub({
   const TABS: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
     { key: "notes",      label: "Notes",       Icon: FileText },
     { key: "summaries",  label: "Summaries",   Icon: BookOpen },
+    { key: "handwrite",  label: "Handwrite",   Icon: PenLine },
     { key: "read",       label: "Read Slides", Icon: ScanText },
     { key: "materials",  label: "Upload",      Icon: Upload },
     { key: "flashcards", label: "Flashcards",  Icon: Layers, badge: dueToday },
     { key: "exams",      label: "Exams",       Icon: GraduationCap },
     { key: "ai-tutor",   label: "AI Tutor",    Icon: Bot },
-    { key: "youtube",    label: "Watch",        Icon: Youtube },
+    { key: "youtube",    label: "Watch",       Icon: Youtube },
     { key: "timetable",  label: "Timetable",   Icon: CalendarDays },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 rounded-2xl border border-accent/20 bg-accent/5 p-4 sm:flex-row sm:items-start sm:p-5">
-        <div className="flex items-start gap-3">
-          <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-accent" />
-          <div className="flex-1">
-            <p className="font-semibold text-foreground">Study Hub</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Notes, summaries, slides, flashcards and your personal timetable. All in one place.
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         {courses.length > 0 && (
           <div className="flex flex-wrap gap-2 sm:shrink-0">
             <button
@@ -512,6 +507,14 @@ export function StudyHub({
 
               <StudyBrainPanel courseId={selected.id} courseName={selected.name} />
 
+              <CourseIntelligence
+                courses={courses}
+                flashcards={flashcards}
+                streak={streak}
+                deadlines={deadlines}
+                selectedCourseId={selected.id}
+              />
+
               <StudyTimer courseId={selected.id} courseName={selected.name} />
 
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -660,7 +663,18 @@ export function StudyHub({
               )}
 
               {tab === "read" && (
-                <SlideReader materials={selected.materials} onRequestExamPrep={requestExamPrep} />
+                <SlideReader materials={selected.materials} courseId={selected.id} onRequestExamPrep={requestExamPrep} />
+              )}
+
+              {tab === "handwrite" && (
+                <HandwritingCanvas
+                  courseId={selected.id}
+                  onSave={(_dataUrl, transcription) => {
+                    if (transcription) {
+                      router.refresh();
+                    }
+                  }}
+                />
               )}
 
               {tab === "ai-tutor" && (
