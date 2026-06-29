@@ -294,8 +294,9 @@ export function StudyHub({
           toast.success("Files uploaded. Use Study Brain to generate flashcards.");
         }
       }
-    } catch {
-      toast.error("Upload failed. Check your connection.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      toast.error(`Upload failed: ${msg}`);
     } finally {
       setUploading(false);
     }

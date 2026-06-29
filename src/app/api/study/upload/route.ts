@@ -34,7 +34,7 @@ export async function DELETE(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const session = await auth.api.getSession({ headers: request.headers });
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -81,7 +81,8 @@ export async function POST(request: Request) {
 
   const results: { ok: boolean; material?: { id: string; title: string; fileName: string }; error?: string; file: string }[] = [];
 
-  for (let i = 0; i < files.length; i++) {
+  try {
+    for (let i = 0; i < files.length; i++) {
     const file = files[i];
 
     if (file.size > MAX_BYTES_PER_FILE) {
@@ -131,6 +132,10 @@ export async function POST(request: Request) {
     });
 
     results.push({ ok: true, file: file.name, material: { id: material.id, title, fileName: file.name } });
+    }
+  } catch (fatalErr) {
+    const msg = fatalErr instanceof Error ? fatalErr.message : String(fatalErr);
+    return NextResponse.json({ error: `Server error: ${msg}` }, { status: 500 });
   }
 
   const successCount = results.filter((r) => r.ok).length;
