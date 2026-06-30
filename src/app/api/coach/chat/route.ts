@@ -544,7 +544,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
+        model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-20241022",
         max_tokens: 1536,
         system: fullSystem,
         tools: TOOLS,

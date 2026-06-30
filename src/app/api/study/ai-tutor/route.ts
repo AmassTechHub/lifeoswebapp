@@ -265,7 +265,6 @@ ${built.context}`;
         mode === "voice" ? 2500 : 1200,
       isPro: user?.isPro ?? false,
     });
-
     if (isJsonMode) {
       const jsonMatch = raw.match(/\{[\s\S]*\}/);
       if (jsonMatch) {

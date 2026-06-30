@@ -2,6 +2,7 @@ import { StudyHub } from "@/components/learning/StudyHub";
 import { MidsemPrepBanner } from "@/components/learning/MidsemPrepBanner";
 import { LearningModeSwitcher } from "@/components/learning/LearningModeSwitcher";
 import { TopicTracker } from "@/components/learning/TopicTracker";
+import { DailyStudyPlan } from "@/components/learning/DailyStudyPlan";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { getFlashcards } from "@/lib/actions/flashcards";
@@ -13,7 +14,6 @@ import { requireSession } from "@/lib/session";
 
 export default async function LearningPage() {
   const session = await requireSession();
-
   let courses: Awaited<ReturnType<typeof getStudyCourses>> = [];
   let flashcards: Awaited<ReturnType<typeof getFlashcards>> = [];
   let streak: Awaited<ReturnType<typeof getStudyStreak>> = { current: 0, longest: 0, totalSessions: 0, totalMinutes: 0 };
@@ -64,6 +64,9 @@ export default async function LearningPage() {
         </div>
       ) : (
         <div className="space-y-5">
+          {/* Daily study plan — personalized "what to do today" */}
+          <DailyStudyPlan userName={session.user.name ?? undefined} />
+
           {/* Midsem prep banner — shows when exams are within 14 days */}
           {midsemExams.length > 0 && (
             <MidsemPrepBanner

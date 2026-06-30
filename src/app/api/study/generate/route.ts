@@ -55,7 +55,14 @@ export async function POST(request: Request) {
     messages: [{ role: "user", content: `Course context:\n${built.context}` }],
     maxTokens: 1400,
     isPro: userRecord?.isPro ?? false,
+  }).catch((err: unknown) => {
+    console.error("[study/generate] Claude error:", err instanceof Error ? err.message : err);
+    return null;
   });
+
+  if (!raw) {
+    return NextResponse.json({ error: "AI is temporarily unavailable. Please try again." }, { status: 503 });
+  }
 
   if (action === "summary") {
     const note = await prisma.studyNote.create({

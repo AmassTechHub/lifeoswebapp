@@ -17,6 +17,7 @@ import {
   Play,
   Plus,
   ScanText,
+  ScrollText,
   Sparkles,
   Trash2,
   Upload,
@@ -32,6 +33,7 @@ import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
 import { HandwritingCanvas } from "@/components/learning/HandwritingCanvas";
 import { ExamCountdown } from "@/components/learning/ExamCountdown";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
+import { PastPaperPanel } from "@/components/learning/PastPaperPanel";
 import { SlideReader } from "@/components/learning/SlideReader";
 import { StudyBrainPanel } from "@/components/learning/StudyBrainPanel";
 import { StudyTimer } from "@/components/learning/StudyTimer";
@@ -103,7 +105,7 @@ type Deadline = {
   course: { name: string; color: string } | null;
 };
 
-type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable" | "exams" | "handwrite";
+type Tab = "notes" | "summaries" | "materials" | "read" | "flashcards" | "ai-tutor" | "youtube" | "timetable" | "exams" | "handwrite" | "past-paper";
 
 type StreakData = { current: number; longest: number; totalSessions: number; totalMinutes: number };
 
@@ -330,6 +332,7 @@ export function StudyHub({
     { key: "read",       label: "Slides",     Icon: ScanText },
     { key: "materials",  label: "Upload",     Icon: Upload },
     { key: "flashcards", label: "Flashcards", Icon: Layers, badge: dueToday },
+    { key: "past-paper", label: "Past Papers", Icon: ScrollText },
     { key: "exams",      label: "Exams",      Icon: GraduationCap },
     { key: "ai-tutor",   label: "AI Tutor",   Icon: Bot },
     { key: "youtube",    label: "Watch",      Icon: Youtube },
@@ -744,6 +747,10 @@ export function StudyHub({
                   deadlines={deadlines.filter((d) => d.courseId === selected.id)}
                   courseName={selected.name}
                 />
+              )}
+
+              {tab === "past-paper" && (
+                <PastPaperPanel courseId={selected.id} courseName={selected.name} />
               )}
 
               {tab === "materials" && (

@@ -47,18 +47,25 @@ export async function POST(request: Request) {
 
   const sourceIndex = built.sources.map((s) => `[${s.kind}:${s.id}] ${s.title}`).join("\n");
 
-  const raw = await callClaude({
-    apiKey,
-    system: SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: `Sources:\n${sourceIndex}\n\nContext:\n${built.context}\n\nQuestion: ${question}`,
-      },
-    ],
-    maxTokens: 1000,
-    isPro: userRecord?.isPro ?? false,
-  }).catch(() => "");
+  let raw: string;
+  try {
+    raw = await callClaude({
+      apiKey,
+      system: SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Sources:\n${sourceIndex}\n\nContext:\n${built.context}\n\nQuestion: ${question}`,
+        },
+      ],
+      maxTokens: 1000,
+      isPro: userRecord?.isPro ?? false,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "AI request failed";
+    console.error("[study/ask] Claude error:", msg);
+    return NextResponse.json({ reply: "AI is temporarily unavailable. Please try again.", citations: [], configured: true });
+  }
 
   let reply = raw;
   let citations: { sourceId: string; title: string; quote: string; kind: string }[] = [];

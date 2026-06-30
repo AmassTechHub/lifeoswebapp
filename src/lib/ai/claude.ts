@@ -1,5 +1,5 @@
-const FREE_MODEL = "claude-haiku-4-5-20251001";
-const PRO_MODEL = "claude-sonnet-4-6";
+const FREE_MODEL = "claude-3-5-haiku-20241022";
+const PRO_MODEL = "claude-sonnet-4-5";
 const FREE_DAILY_LIMIT = 30;
 
 export { FREE_DAILY_LIMIT };
