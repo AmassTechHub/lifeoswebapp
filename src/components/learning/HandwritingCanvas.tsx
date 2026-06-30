@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
-  Download, Eraser, Loader2, Pen, RotateCcw, Save,
+  Download, Eraser, Loader2, Pen,
   Sparkles, Trash2, Type,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -320,7 +320,9 @@ export function HandwritingCanvas({ courseId, onSave, className }: Props) {
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
             <Pen className="h-8 w-8 text-muted-foreground/20" />
             <p className="text-sm text-muted-foreground/40">Draw with your finger, mouse, or stylus pen</p>
-            <p className="text-xs text-muted-foreground/25">Supports Apple Pencil, Surface Pen, and S Pen</p>
+        <p className="text-xs text-muted-foreground/40 text-center">
+          Supports Apple Pencil, Surface Pen, and S Pen
+        </p>
           </div>
         )}
       </div>
@@ -346,7 +348,7 @@ export function HandwritingCanvas({ courseId, onSave, className }: Props) {
       )}
 
       <p className="text-[10px] text-muted-foreground/40 text-center">
-        Pressure-sensitive · works with stylus, finger, or mouse · "Convert to text" uses AI to read your handwriting
+        Pressure-sensitive · works with stylus, finger, or mouse · &ldquo;Convert to text&rdquo; uses AI to read your handwriting
       </p>
     </div>
   );

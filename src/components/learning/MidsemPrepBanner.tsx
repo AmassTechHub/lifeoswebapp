@@ -103,7 +103,7 @@ export function MidsemPrepBanner({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 shrink-0">
+        <div className="flex flex-wrap gap-2 sm:shrink-0">
           {flashcardsDue > 0 && (
             <Link
               href="/learning"
@@ -123,7 +123,7 @@ export function MidsemPrepBanner({
             onClick={buildExamPlan}
             disabled={building}
             className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors",
+              "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:flex-none",
               urgent
                 ? "bg-rose-500 text-white hover:bg-rose-600"
                 : "bg-accent text-white hover:opacity-90"

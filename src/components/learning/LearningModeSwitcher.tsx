@@ -24,32 +24,37 @@ export function LearningModeSwitcher({
   return (
     <div className="space-y-4">
       {/* Mode tab switcher */}
-      <div className="flex gap-1 rounded-xl border border-border/60 bg-muted/30 p-1 w-fit">
+      <div className="flex gap-1 rounded-xl border border-border/60 bg-muted/30 p-1">
         <button
           type="button"
           onClick={() => setMode("courses")}
           className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
             mode === "courses"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
           <GraduationCap className="h-4 w-4" />
-          Courses
+          <span>Courses</span>
+          {mode === "courses" && hasCourses && (
+            <span className="ml-1 hidden rounded-full bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent sm:inline">
+              Structured
+            </span>
+          )}
         </button>
         <button
           type="button"
           onClick={() => setMode("topics")}
           className={cn(
-            "flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
+            "flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all",
             mode === "topics"
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
           <BookOpen className="h-4 w-4" />
-          Topics
+          <span>Topics</span>
         </button>
       </div>
 

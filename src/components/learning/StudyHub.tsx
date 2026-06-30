@@ -324,60 +324,58 @@ export function StudyHub({
   }
 
   const TABS: { key: Tab; label: string; Icon: React.ElementType; badge?: number }[] = [
-    { key: "notes",      label: "Notes",       Icon: FileText },
-    { key: "summaries",  label: "Summaries",   Icon: BookOpen },
-    { key: "handwrite",  label: "Handwrite",   Icon: PenLine },
-    { key: "read",       label: "Read Slides", Icon: ScanText },
-    { key: "materials",  label: "Upload",      Icon: Upload },
-    { key: "flashcards", label: "Flashcards",  Icon: Layers, badge: dueToday },
-    { key: "exams",      label: "Exams",       Icon: GraduationCap },
-    { key: "ai-tutor",   label: "AI Tutor",    Icon: Bot },
-    { key: "youtube",    label: "Watch",       Icon: Youtube },
-    { key: "timetable",  label: "Timetable",   Icon: CalendarDays },
+    { key: "notes",      label: "Notes",      Icon: FileText },
+    { key: "summaries",  label: "Summaries",  Icon: BookOpen },
+    { key: "handwrite",  label: "Handwrite",  Icon: PenLine },
+    { key: "read",       label: "Slides",     Icon: ScanText },
+    { key: "materials",  label: "Upload",     Icon: Upload },
+    { key: "flashcards", label: "Flashcards", Icon: Layers, badge: dueToday },
+    { key: "exams",      label: "Exams",      Icon: GraduationCap },
+    { key: "ai-tutor",   label: "AI Tutor",   Icon: Bot },
+    { key: "youtube",    label: "Watch",      Icon: Youtube },
+    { key: "timetable",  label: "Timetable",  Icon: CalendarDays },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {courses.length > 0 && (
-          <div className="flex flex-wrap gap-2 sm:shrink-0">
-            <button
-              type="button"
-              onClick={handleGenerateStudyPlan}
-              disabled={planningStudy}
-              className="flex items-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
-            >
-              {planningStudy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <CalendarPlus className="h-3.5 w-3.5" />
-              )}
-              Build my timetable
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowSetup((v) => !v)}
-              className="rounded-lg border border-border/60 bg-muted/50 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {showSetup ? "Hide setup" : "Re-run course setup"}
-            </button>
-          </div>
-        )}
-      </div>
+      {courses.length > 0 && (
+        <div className="flex w-full flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleGenerateStudyPlan}
+            disabled={planningStudy}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-accent/30 bg-accent/10 px-3 py-2 text-xs font-semibold text-accent transition-colors hover:bg-accent/20 disabled:opacity-50 sm:flex-none"
+          >
+            {planningStudy ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <CalendarPlus className="h-3.5 w-3.5" />
+            )}
+            Build my timetable
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowSetup((v) => !v)}
+            className="flex flex-1 items-center justify-center rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted sm:flex-none"
+          >
+            {showSetup ? "Hide setup" : "Re-run course setup"}
+          </button>
+        </div>
+      )}
 
       {/* Study streak banner */}
       {(streak.current > 0 || streak.totalSessions > 0) && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {[
             { label: "Day streak", value: streak.current > 0 ? `${streak.current} 🔥` : "0", sub: `Best: ${streak.longest}d` },
-            { label: "Total sessions", value: String(streak.totalSessions), sub: "all time" },
+            { label: "Sessions", value: String(streak.totalSessions), sub: "all time" },
             { label: "Time studied", value: streak.totalMinutes >= 60 ? `${Math.floor(streak.totalMinutes / 60)}h ${streak.totalMinutes % 60}m` : `${streak.totalMinutes}m`, sub: "all time" },
-            { label: "Courses", value: String(initial.length), sub: `${flashcards.length} flashcards` },
+            { label: "Courses", value: String(initial.length), sub: `${flashcards.length} cards` },
           ].map(({ label, value, sub }) => (
-            <div key={label} className="rounded-xl border border-border/60 bg-card/80 px-4 py-3 text-center">
-              <p className="text-lg font-bold text-foreground">{value}</p>
-              <p className="text-xs font-medium text-muted-foreground">{label}</p>
-              <p className="text-[10px] text-muted-foreground/50">{sub}</p>
+            <div key={label} className="rounded-xl border border-border/60 bg-card/80 px-3 py-2.5 text-center">
+              <p className="text-base font-bold text-foreground sm:text-lg">{value}</p>
+              <p className="text-[11px] font-medium text-muted-foreground">{label}</p>
+              <p className="text-[9px] text-muted-foreground/50">{sub}</p>
             </div>
           ))}
         </div>
@@ -403,21 +401,23 @@ export function StudyHub({
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-lg font-semibold">Weekly Timetable</h2>
-            <div className="flex gap-2 overflow-x-auto pb-1 sm:pb-0">
+            <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:gap-2">
               {TABS.map(({ key, label, Icon }) => (
                 <button
                   key={key}
                   type="button"
+                  title={label}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                    "inline-flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-2 text-[10px] font-medium transition-colors sm:flex-row sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-2 sm:text-sm",
                     tab === key
                       ? "bg-accent text-white"
                       : "bg-muted text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
-                  {label}
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">{label}</span>
+                  <span className="sm:hidden">{label.split(" ")[0]}</span>
                 </button>
               ))}
             </div>
@@ -441,93 +441,113 @@ export function StudyHub({
           )}
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
-          {/* Course sidebar */}
-          <Card className="h-fit border-border/70 bg-card/80">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Courses</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <ul className="space-y-1">
+        <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+          {/* Course sidebar — on mobile shows as horizontal scroll list above content */}
+          <div className="lg:sticky lg:top-4 lg:h-fit">
+            {/* Mobile: horizontal pill list + inline quick-add */}
+            <div className="space-y-2 lg:hidden">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {courses.map((c) => (
-                  <li key={c.id}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(c.id)}
-                      className={cn(
-                        "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-                        selected?.id === c.id
-                          ? "bg-accent/15 text-accent ring-1 ring-accent/25"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )}
-                    >
-                      <span
-                        className="h-2.5 w-2.5 shrink-0 rounded-full"
-                        style={{ backgroundColor: c.color }}
-                      />
-                      <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
-                      <CourseRing
-                        notes={c._count.notes}
-                        materials={c._count.materials}
-                        cards={flashcardsByCourse[c.id] ?? 0}
-                      />
-                    </button>
-                  </li>
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedId(c.id)}
+                    className={cn(
+                      "flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
+                      selected?.id === c.id
+                        ? "border-accent/40 bg-accent/15 text-accent"
+                        : "border-border/60 bg-card/80 text-muted-foreground"
+                    )}
+                  >
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full"
+                      style={{ backgroundColor: c.color }}
+                    />
+                    <span className="max-w-[140px] truncate">{c.name}</span>
+                  </button>
                 ))}
-              </ul>
-
-              <form onSubmit={handleCreateCourse} className="space-y-2 border-t border-border pt-3">
-                <Label htmlFor="course-name" className="text-xs">Add class</Label>
-                <Input id="course-name" name="name" placeholder="e.g. Data Structures" required />
-                <Input name="code" placeholder="Code (DSA101)" />
-                <div className="flex items-center gap-2">
-                  <label className="text-xs text-muted-foreground">Color</label>
-                  <input
-                    name="color"
-                    type="color"
-                    defaultValue="#3b82f6"
-                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
-                  />
-                </div>
-                <Button type="submit" size="sm" className="w-full gap-1" disabled={pending}>
-                  {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                <button
+                  type="button"
+                  onClick={() => setShowSetup(true)}
+                  className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border/60 bg-muted/30 px-3 py-1.5 text-xs font-medium text-muted-foreground"
+                >
+                  <Plus className="h-3 w-3" />
                   Add course
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop: vertical card */}
+            <Card className="hidden border-border/70 bg-card/80 lg:block">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Courses</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <ul className="space-y-1">
+                  {courses.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(c.id)}
+                        className={cn(
+                          "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                          selected?.id === c.id
+                            ? "bg-accent/15 text-accent ring-1 ring-accent/25"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <span
+                          className="h-2.5 w-2.5 shrink-0 rounded-full"
+                          style={{ backgroundColor: c.color }}
+                        />
+                        <span className="min-w-0 flex-1 truncate font-medium">{c.name}</span>
+                        <CourseRing
+                          notes={c._count.notes}
+                          materials={c._count.materials}
+                          cards={flashcardsByCourse[c.id] ?? 0}
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+
+                <form onSubmit={handleCreateCourse} className="space-y-2 border-t border-border pt-3">
+                  <Label htmlFor="course-name-desk" className="text-xs">Add class</Label>
+                  <Input id="course-name-desk" name="name" placeholder="e.g. Data Structures" required />
+                  <Input name="code" placeholder="Code (DSA101)" />
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs text-muted-foreground">Color</label>
+                    <input
+                      name="color"
+                      type="color"
+                      defaultValue="#3b82f6"
+                      className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent"
+                    />
+                  </div>
+                  <Button type="submit" size="sm" className="w-full gap-1" disabled={pending}>
+                    {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    Add course
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Course detail */}
           {selected ? (
             <div className="min-w-0 space-y-4">
-              <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                <p className="min-w-0 flex-1 text-sm text-muted-foreground">{getStudyTip(selected)}</p>
-              </div>
-
-              <StudyBrainPanel courseId={selected.id} courseName={selected.name} />
-
-              <CourseIntelligence
-                courses={courses}
-                flashcards={flashcards}
-                streak={streak}
-                deadlines={deadlines}
-                selectedCourseId={selected.id}
-              />
-
-              <StudyTimer courseId={selected.id} courseName={selected.name} />
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold text-foreground">{selected.name}</h2>
+              {/* Course header */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <h2 className="truncate text-lg font-bold text-foreground sm:text-xl">{selected.name}</h2>
                   {selected.code && (
                     <p className="text-sm text-muted-foreground">{selected.code}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex shrink-0 items-center gap-2">
                   <Link
                     href={`/session/${selected.id}`}
-                    className="flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    className="flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-90 sm:px-4 sm:py-2 sm:text-sm"
                   >
                     <Play className="h-3.5 w-3.5" />
                     Study session
@@ -551,26 +571,46 @@ export function StudyHub({
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              {/* Study tip */}
+              <div className="flex items-start gap-3 rounded-xl border border-border/60 bg-muted/30 px-4 py-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+                <p className="min-w-0 flex-1 text-sm text-muted-foreground">{getStudyTip(selected)}</p>
+              </div>
+
+              <StudyBrainPanel courseId={selected.id} courseName={selected.name} />
+
+              <CourseIntelligence
+                courses={courses}
+                flashcards={flashcards}
+                streak={streak}
+                deadlines={deadlines}
+                selectedCourseId={selected.id}
+              />
+
+              <StudyTimer courseId={selected.id} courseName={selected.name} />
+
+              {/* Tabs — icon-only on mobile, icon+label on desktop */}
+              <div className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 sm:gap-2">
                 {TABS.map(({ key, label, Icon, badge }) => (
                   <button
                     key={key}
                     type="button"
+                    title={label}
                     onClick={() => setTab(key)}
                     className={cn(
-                      "inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                      "relative inline-flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-2 text-[10px] font-medium transition-colors sm:flex-row sm:gap-1.5 sm:rounded-lg sm:px-3 sm:py-2 sm:text-sm",
                       tab === key
                         ? "bg-accent text-white"
                         : "bg-muted text-muted-foreground hover:text-foreground"
                     )}
                   >
-                    <Icon className="h-4 w-4" />
-                    {label}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="hidden sm:inline">{label}</span>
+                    <span className="sm:hidden">{label.split(" ")[0]}</span>
                     {badge != null && badge > 0 && (
                       <span className={cn(
-                        "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                        tab === key ? "bg-white/20 text-white" : "bg-warning/20 text-warning"
+                        "absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold sm:static sm:rounded-full sm:px-1.5 sm:py-0.5 sm:text-[10px]",
+                        tab === key ? "bg-white/30 text-white" : "bg-warning/20 text-warning"
                       )}>
                         {badge}
                       </span>
