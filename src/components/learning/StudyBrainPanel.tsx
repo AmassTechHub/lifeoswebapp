@@ -8,7 +8,6 @@ import { Brain, ChevronDown, ChevronUp, Loader2, Send, Sparkles } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { cn } from "@/lib/utils";
 
 const QUICK_PROMPTS = [
   "Explain this course as if I'm preparing for an exam",

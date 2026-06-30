@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   AlertTriangle, BookOpen, Brain, CheckCircle2,
   Layers, Target, TrendingUp, Zap,
@@ -122,10 +121,8 @@ export function CourseIntelligence({
 
   // What to do next — smart recommendation
   let nextAction = "";
-  let nextHref = "/learning";
-  if (course._count.materials === 0 && course._count.notes === 0) {
+  if (selectedCourse._count.materials === 0 && selectedCourse._count.notes === 0) {
     nextAction = "Upload your lecture slides to unlock AI study tools";
-    nextHref = "/learning";
   } else if (courseFlashcards.length === 0) {
     nextAction = "Generate flashcards from your slides to start spaced repetition";
   } else if (dueCards.length > 0) {
@@ -137,9 +134,6 @@ export function CourseIntelligence({
   } else {
     nextAction = "Use the AI Tutor → Teach Me mode to review this course";
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const course = selectedCourse;
 
   return (
     <div className="rounded-xl border border-border/50 bg-card/60 p-4 space-y-3">
