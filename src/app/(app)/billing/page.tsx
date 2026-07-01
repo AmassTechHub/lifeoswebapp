@@ -16,7 +16,7 @@ export default async function BillingPage() {
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Upgrade to Pro</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Unlimited AI messages, the full Sonnet 4.6 model, and priority support.
+          Unlimited AI messages, the full Claude Sonnet 4.5 model, and priority support.
         </p>
       </header>
       <BillingPanel

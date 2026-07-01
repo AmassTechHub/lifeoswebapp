@@ -8,7 +8,7 @@ export default async function AnalyticsPage() {
 
   return (
     <DashboardShell>
-      <PageHeader title="Study Analytics" />
+      <PageHeader title="Analytics" />
       <StudyAnalytics {...data} />
     </DashboardShell>
   );

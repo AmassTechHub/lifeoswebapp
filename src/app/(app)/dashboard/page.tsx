@@ -59,13 +59,11 @@ export default async function DashboardPage() {
 
   await runLifeEngineIfNeeded(session.user.id);
 
-  const [agenda, scheduleRaw, upcomingExams, prefs, manualEventCount, userCounts, topicCount] = await Promise.all([
+  const [agenda, scheduleRaw, upcomingExams, prefs, manualEventCount, userCounts, topicCount, userOnboarding] = await Promise.all([
     getTodayAgenda(session.user.id),
     getTodaySchedule(session.user.id),
     getUpcomingExams(session.user.id, 14),
     getUserPrefs(session.user.id),
-    // Only count MANUAL events — system events are created on first load
-    // and would falsely mark "Add a calendar event" as done
     prisma.calendarEvent.count({
       where: { userId: session.user.id, source: "MANUAL" },
     }),
@@ -75,9 +73,18 @@ export default async function DashboardPage() {
         _count: { select: { tasks: true, habits: true, goals: true, studyCourses: true, expenses: true } },
       },
     }),
-    // Count LearningTopics so "Set up courses or topics" works for self-learners too
     prisma.learningTopic.count({ where: { userId: session.user.id } }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { onboardingCompleted: true },
+    }),
   ]);
+
+  // Redirect new users who haven't completed onboarding
+  if (!userOnboarding?.onboardingCompleted) {
+    const { redirect } = await import("next/navigation");
+    redirect("/onboarding");
+  }
 
   const schedule = scheduleRaw.map((e) => ({
     id:       e.id,

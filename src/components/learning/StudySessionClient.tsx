@@ -119,22 +119,22 @@ export function StudySessionClient({
     }
   }
 
-  const recordAnswer = useCallback(async (cardId: string, wasCorrect: boolean) => {
+  const recordAnswer = useCallback(async (cardId: string, wasCorrect: boolean, quality = 4) => {
     setSavingAnswer(true);
     try {
-      await fetch("/api/study/session/answer", {
+      await fetch("/api/flashcards/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cardId, correct: wasCorrect }),
+        body: JSON.stringify({ id: cardId, quality }),
       });
     } finally {
       setSavingAnswer(false);
     }
   }, []);
 
-  async function handleAnswer(wasCorrect: boolean) {
+  async function handleAnswer(wasCorrect: boolean, quality = wasCorrect ? 4 : 1) {
     if (!currentCard || savingAnswer) return;
-    await recordAnswer(currentCard.id, wasCorrect);
+    await recordAnswer(currentCard.id, wasCorrect, quality);
 
     if (wasCorrect) {
       setCorrect((prev) => [...prev, currentCard.id]);
@@ -383,33 +383,38 @@ export function StudySessionClient({
                 )}
               </button>
 
-              {/* Answer buttons */}
+              {/* SM-2 Answer buttons */}
               <AnimatePresence>
                 {flipped && (
                   <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.18, delay: 0.05 }}
-                    className="mt-5 grid grid-cols-2 gap-3"
+                    className="mt-5 space-y-2"
                   >
-                    <button
-                      type="button"
-                      disabled={savingAnswer}
-                      onClick={() => handleAnswer(false)}
-                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-danger/30 bg-danger/5 py-4 text-sm font-semibold text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
-                    >
-                      <X className="h-4 w-4" />
-                      Missed it
-                    </button>
-                    <button
-                      type="button"
-                      disabled={savingAnswer}
-                      onClick={() => handleAnswer(true)}
-                      className="flex items-center justify-center gap-2 rounded-xl border-2 border-success/30 bg-success/5 py-4 text-sm font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-50"
-                    >
-                      <Check className="h-4 w-4" />
-                      Got it
-                    </button>
+                    <p className="text-center text-xs text-muted-foreground">How well did you recall this?</p>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { quality: 1, label: "Again",  sub: "< 1d",   cls: "border-danger/30  bg-danger/5   text-danger  hover:bg-danger/10" },
+                        { quality: 3, label: "Hard",   sub: "~2d",    cls: "border-orange-500/30 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10" },
+                        { quality: 4, label: "Good",   sub: "~4d",    cls: "border-accent/30  bg-accent/5   text-accent  hover:bg-accent/10" },
+                        { quality: 5, label: "Easy",   sub: "~7d+",   cls: "border-success/30 bg-success/5  text-success hover:bg-success/10" },
+                      ].map(({ quality, label, sub, cls }) => (
+                        <button
+                          key={quality}
+                          type="button"
+                          disabled={savingAnswer}
+                          onClick={() => handleAnswer(quality >= 3, quality)}
+                          className={cn(
+                            "flex flex-col items-center gap-0.5 rounded-xl border-2 py-3 text-xs font-semibold transition-colors disabled:opacity-50",
+                            cls
+                          )}
+                        >
+                          {savingAnswer ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : label}
+                          <span className="text-[9px] font-normal opacity-60">{sub}</span>
+                        </button>
+                      ))}
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>

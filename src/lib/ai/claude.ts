@@ -1,6 +1,6 @@
 const FREE_MODEL = "claude-3-5-haiku-20241022";
 const PRO_MODEL = "claude-sonnet-4-5";
-const FREE_DAILY_LIMIT = 30;
+const FREE_DAILY_LIMIT = 60;
 
 export { FREE_DAILY_LIMIT };
 
