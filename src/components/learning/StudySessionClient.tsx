@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft,
   BookOpen,
-  Check,
   ChevronRight,
   Loader2,
   MessageSquare,
   RefreshCw,
   SendHorizonal,
   Sparkles,
-  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import {
-  Bot, Calendar, CheckSquare, DollarSign, Flame,
+  Calendar, CheckSquare, DollarSign, Flame,
   GraduationCap, Target, X,
 } from "lucide-react";
 

@@ -6,7 +6,7 @@ import { DailyStudyPlan } from "@/components/learning/DailyStudyPlan";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { getFlashcards } from "@/lib/actions/flashcards";
-import { getStudyCourses, getStudyStreak, getCourseTimeSecs, getDeadlines } from "@/lib/actions/study";
+import { getStudyCourses, getStudyStreak, getDeadlines } from "@/lib/actions/study";
 import { getTopics } from "@/lib/actions/topics";
 import { getUpcomingExams } from "@/lib/study/exam-plan";
 import { getFlashcardsDueCount } from "@/lib/study/today";
@@ -17,7 +17,6 @@ export default async function LearningPage() {
   let courses: Awaited<ReturnType<typeof getStudyCourses>> = [];
   let flashcards: Awaited<ReturnType<typeof getFlashcards>> = [];
   let streak: Awaited<ReturnType<typeof getStudyStreak>> = { current: 0, longest: 0, totalSessions: 0, totalMinutes: 0 };
-  let courseTimeSecs: Record<string, number> = {};
   let deadlines: Awaited<ReturnType<typeof getDeadlines>> = [];
   let upcomingExams: Awaited<ReturnType<typeof getUpcomingExams>> = [];
   let flashcardsDue = 0;
@@ -25,12 +24,11 @@ export default async function LearningPage() {
   let dbError: string | null = null;
 
   try {
-    [courses, flashcards, streak, courseTimeSecs, deadlines, upcomingExams, flashcardsDue, topics] =
+    [courses, flashcards, streak, deadlines, upcomingExams, flashcardsDue, topics] =
       await Promise.all([
         getStudyCourses(session.user.id),
         getFlashcards(session.user.id),
         getStudyStreak(session.user.id),
-        getCourseTimeSecs(session.user.id),
         getDeadlines(session.user.id),
         getUpcomingExams(session.user.id, 14),
         getFlashcardsDueCount(session.user.id),
@@ -85,7 +83,6 @@ export default async function LearningPage() {
                 courses={courses}
                 flashcards={flashcards}
                 streak={streak}
-                courseTimeSecs={courseTimeSecs}
                 deadlines={deadlines}
               />
             }

@@ -113,13 +113,11 @@ export function StudyHub({
   courses: initial,
   flashcards,
   streak,
-  courseTimeSecs,
   deadlines = [],
 }: {
   courses: Course[];
   flashcards: Flashcard[];
   streak: StreakData;
-  courseTimeSecs: Record<string, number>;
   deadlines?: Deadline[];
 }) {
   const router = useRouter();
@@ -252,6 +250,14 @@ export function StudyHub({
 
   async function handleUpload(files: File[], title: string) {
     if (!selected || files.length === 0) return;
+
+    // Client-side size check before hitting the server
+    const oversized = files.filter(f => f.size > 10 * 1024 * 1024);
+    if (oversized.length > 0) {
+      toast.error(`${oversized.map(f => f.name).join(", ")} exceed 10MB. Split large PDFs into smaller files.`);
+      return;
+    }
+
     const fd = new FormData();
     fd.set("courseId", selected.id);
     if (title.trim()) fd.set("title", title.trim());
@@ -268,12 +274,26 @@ export function StudyHub({
     setMessage("");
     try {
       const res = await fetch("/api/study/upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "Upload failed");
+
+      // Safely parse — Vercel returns plain text on 413 (body too large)
+      let data: Record<string, unknown> = {};
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        data = await res.json();
       } else {
-        const uploaded = data.uploaded ?? 1;
-        const failed   = data.failed ?? 0;
+        const text = await res.text();
+        if (res.status === 413 || text.toLowerCase().includes("too large") || text.toLowerCase().includes("entity")) {
+          toast.error("File too large. Please upload files under 10MB each. For large slide decks, split them into smaller PDFs.");
+          return;
+        }
+        data = { error: text || "Upload failed" };
+      }
+
+      if (!res.ok) {
+        toast.error(String(data.error ?? "Upload failed"));
+      } else {
+        const uploaded = (data.uploaded as number) ?? 1;
+        const failed   = (data.failed as number) ?? 0;
         setUploadFiles([]);
         setUploadTitle("");
         router.refresh();
@@ -289,19 +309,28 @@ export function StudyHub({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ courseId: selected.id, action: "flashcards" }),
         });
-        const genData = await genRes.json();
-        if (genRes.ok && genData.flashcardsCreated > 0) {
-          toast.success(`${genData.flashcardsCreated} flashcards generated from your slides`, {
-            action: { label: "Exam prep quiz", onClick: requestExamPrep },
-          });
-          router.refresh();
+        const genContentType = genRes.headers.get("content-type") ?? "";
+        if (genContentType.includes("application/json")) {
+          const genData = await genRes.json();
+          if (genRes.ok && genData.flashcardsCreated > 0) {
+            toast.success(`${genData.flashcardsCreated} flashcards generated from your slides`, {
+              action: { label: "Exam prep quiz", onClick: requestExamPrep },
+            });
+            router.refresh();
+          } else {
+            toast.success("Files uploaded. Use Study Brain to generate flashcards.");
+          }
         } else {
           toast.success("Files uploaded. Use Study Brain to generate flashcards.");
         }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
-      toast.error(`Upload failed: ${msg}`);
+      if (msg.includes("413") || msg.includes("too large") || msg.includes("entity")) {
+        toast.error("File too large. Keep files under 10MB. Split large slide decks into smaller PDFs.");
+      } else {
+        toast.error(`Upload failed: ${msg}`);
+      }
     } finally {
       setUploading(false);
     }
@@ -781,7 +810,14 @@ export function StudyHub({
                                 <FileText className="h-4 w-4 shrink-0 text-red-400" />
                               )}
                               <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">{f.name}</span>
-                              <span className="shrink-0 text-[10px] text-muted-foreground/60">{(f.size / 1024).toFixed(0)} KB</span>
+                              <span className="shrink-0 text-[10px] text-muted-foreground/60">
+                                {f.size > 10 * 1024 * 1024
+                                  ? <span className="font-semibold text-danger">{(f.size / (1024*1024)).toFixed(1)} MB — too large</span>
+                                  : f.size >= 1024 * 1024
+                                    ? `${(f.size / (1024*1024)).toFixed(1)} MB`
+                                    : `${(f.size / 1024).toFixed(0)} KB`
+                                }
+                              </span>
                               <button
                                 type="button"
                                 onClick={() => setUploadFiles((prev) => prev.filter((_, idx) => idx !== i))}

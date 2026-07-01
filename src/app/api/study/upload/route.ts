@@ -5,8 +5,21 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadToStorage } from "@/lib/supabase";
 
-const MAX_BYTES_PER_FILE = 12 * 1024 * 1024;  // 12 MB per file
-const MAX_FILES = 20;
+// Allow up to 20MB request bodies on Vercel (overrides the 4.5MB default)
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: false,
+  },
+  maxDuration: 60,
+};
+
+// Next.js App Router body size config (used by Vercel)
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+const MAX_BYTES_PER_FILE = 10 * 1024 * 1024;  // 10 MB per file (safe under Vercel's 20MB multipart limit)
+const MAX_FILES = 10;
 const ALLOWED = [
   "application/pdf",
   "image/png",

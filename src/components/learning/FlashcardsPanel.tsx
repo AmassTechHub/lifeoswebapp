@@ -142,7 +142,7 @@ export function FlashcardsPanel({
             </div>
             {again > 0 && (
               <p className="text-xs text-muted-foreground">
-                {again} card{again !== 1 ? "s" : ""} marked "Again" will appear again tomorrow.
+                {again} card{again !== 1 ? "s" : ""} marked &ldquo;Again&rdquo; will appear again tomorrow.
               </p>
             )}
             <Button onClick={() => { setSessionDone(false); setReviewIdx(0); setFlipped(false); setSessionStats({ again: 0, hard: 0, good: 0, easy: 0, total: 0 }); }}>

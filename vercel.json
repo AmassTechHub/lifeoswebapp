@@ -4,5 +4,13 @@
       "path": "/api/notifications/check",
       "schedule": "0 8 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "src/app/api/study/upload/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/study/past-paper/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }

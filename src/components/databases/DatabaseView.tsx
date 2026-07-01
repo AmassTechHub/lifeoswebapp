@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import { DragDropContext, Draggable, Droppable, type DropResult } from "@hello-pangea/dnd";
 import {
   Calendar as CalendarIcon,
@@ -28,7 +27,6 @@ import {
   type PropertyType,
   type View,
 } from "@/lib/actions/database";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -275,7 +273,7 @@ function KanbanView({ db, view, onCellChange, onAddOption }: {
   const groupProp = db.properties.find((p) => p.id === view.groupByPropertyId && p.type === "select");
   const [addingCol, setAddingCol] = useState(false);
   const [colLabel, setColLabel] = useState("");
-  const columns = groupProp?.options ?? [];
+  const columns = useMemo(() => groupProp?.options ?? [], [groupProp]);
   const groupPropId = groupProp?.id;
 
   const rowsByOption = useMemo(() => {

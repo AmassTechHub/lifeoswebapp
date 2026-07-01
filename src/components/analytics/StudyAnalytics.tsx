@@ -85,7 +85,7 @@ export function StudyAnalytics(props: Props) {
   const {
     totalSessions, totalTimeSecs, totalReviewed, overallAccuracy, flashcardsTotal, flashcardsDue,
     daily, courses,
-    tasksCompleted, tasksCreated, taskCompletionRate, dailyTasks,
+    tasksCompleted, tasksCreated, taskCompletionRate,
     habits,
     totalExpenses30, totalIncome30, netSavings30, expensesByCategory,
     latestGrades,

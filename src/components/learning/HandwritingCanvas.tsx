@@ -184,14 +184,6 @@ export function HandwritingCanvas({ courseId, onSave, className }: Props) {
     }
   }
 
-  function saveAsImage() {
-    const canvas = canvasRef.current;
-    if (!canvas || isEmpty) return;
-    const dataUrl = canvas.toDataURL("image/png");
-    if (onSave) onSave(dataUrl);
-    toast.success("Canvas saved");
-  }
-
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {/* Toolbar */}
