@@ -87,9 +87,13 @@ export async function GET() {
 
   // Flashcard review tasks
   for (const [courseKey, count] of cardsByCourse.entries()) {
-    const course = courseKey !== "general"
-      ? await prisma.studyCourse.findUnique({ where: { id: courseKey }, select: { id: true, name: true, color: true } })
-      : null;
+    let course: { id: string; name: string; color: string } | null = null;
+    if (courseKey !== "general") {
+      course = await prisma.studyCourse.findUnique({
+        where: { id: courseKey as string },
+        select: { id: true, name: true, color: true },
+      });
+    }
     tasks.push({
       id: `review-${courseKey}`,
       type: "review",
@@ -112,8 +116,8 @@ export async function GET() {
       priority: days <= 3 ? "urgent" : days <= 7 ? "high" : "normal",
       title: `Prep: ${exam.title}`,
       subtitle: exam.course?.name ?? "Unnamed course",
-      courseId: exam.course?.id,
-      courseName: exam.course?.name,
+      courseId: exam.course?.id ?? undefined,
+      courseName: exam.course?.name ?? undefined,
       courseColor: exam.course?.color ?? "#3b82f6",
       daysLeft: days,
     });
@@ -128,9 +132,9 @@ export async function GET() {
       priority: days === 0 ? "urgent" : days <= 1 ? "high" : "normal",
       title: a.title,
       subtitle: `Due ${days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`}`,
-      courseId: a.course?.id,
-      courseName: a.course?.name,
-      courseColor: a.course?.color,
+      courseId: a.course?.id ?? undefined,
+      courseName: a.course?.name ?? undefined,
+      courseColor: a.course?.color ?? undefined,
       daysLeft: days,
     });
   }
