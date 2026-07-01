@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Flame, X, Zap } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -15,7 +14,6 @@ type StreakData = {
 };
 
 export function StreakNudge() {
-  const router = useRouter();
   const [data, setData] = useState<StreakData | null>(null);
   const [dismissed, setDismissed] = useState(false);
 

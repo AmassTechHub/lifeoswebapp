@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CheckCircle2, Coffee, Play, RotateCcw, Settings2, Square, Timer, Zap } from "lucide-react";
+import { CheckCircle2, Coffee, Play, RotateCcw, Settings2, Square, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 

@@ -96,9 +96,9 @@ export async function GET() {
       priority: count >= 10 ? "urgent" : "high",
       title: `Review ${count} flashcard${count !== 1 ? "s" : ""}`,
       subtitle: course ? course.name : "General deck",
-      courseId: course?.id,
-      courseName: course?.name,
-      courseColor: course?.color,
+      courseId: course?.id ?? undefined,
+      courseName: course?.name ?? undefined,
+      courseColor: course?.color ?? undefined,
       count,
     });
   }
