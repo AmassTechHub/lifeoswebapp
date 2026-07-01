@@ -88,8 +88,10 @@ export function AppSidebar({ isOpen = false, onClose, useCases = [] }: AppSideba
         "fixed inset-y-0 left-0 z-50 flex h-screen w-[220px] shrink-0 flex-col",
         "border-r border-border/40 bg-background",
         "transition-transform duration-200 ease-out",
-        "lg:static lg:z-auto lg:translate-x-0",
-        isOpen ? "translate-x-0" : "-translate-x-full"
+        // On desktop: part of normal flow, sticky so it stays visible on scroll
+        "lg:sticky lg:top-0 lg:z-auto lg:translate-x-0 lg:h-screen",
+        // On mobile: slides in from left as overlay
+        isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}
     >
       {/* ── Logo bar ──────────────────────────────────────────────── */}

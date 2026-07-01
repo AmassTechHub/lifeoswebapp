@@ -5,6 +5,7 @@ import { Menu, X } from "lucide-react";
 
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { CommandPalette } from "@/components/layout/CommandPalette";
+import { NotificationCentre } from "@/components/layout/NotificationCentre";
 import { VoiceAssistant } from "@/components/ai/VoiceAssistant";
 import { ProductivityNudge } from "@/components/coach/ProductivityNudge";
 import { NotificationPermissionPrompt } from "@/components/notifications/NotificationPermissionPrompt";
@@ -19,7 +20,7 @@ export function AppLayoutClient({
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Mobile backdrop */}
       {open && (
         <div
@@ -28,14 +29,14 @@ export function AppLayoutClient({
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — sticky on desktop, fixed overlay on mobile */}
       <AppSidebar isOpen={open} onClose={() => setOpen(false)} useCases={useCases} />
 
-      {/* Main content column */}
-      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
+      {/* Main content column — scrolls independently */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden overflow-y-auto">
 
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/90 px-4 backdrop-blur-md lg:hidden">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border/40 bg-background/90 px-4 backdrop-blur-md lg:hidden">
           <div className="flex items-center gap-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icon.svg" alt="Life OS" className="h-7 w-7 rounded-lg" />
@@ -43,17 +44,20 @@ export function AppLayoutClient({
               Life OS
             </span>
           </div>
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-muted"
-            aria-label="Toggle sidebar"
-          >
-            {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationCentre />
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-colors hover:bg-muted"
+              aria-label="Toggle sidebar"
+            >
+              {open ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+          </div>
         </header>
 
-        <main className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
+        <main className="min-w-0 flex-1">
           {children}
         </main>
       </div>

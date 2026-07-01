@@ -30,6 +30,7 @@ import Link from "next/link";
 import { AITutorPanel } from "@/components/learning/AITutorPanel";
 import { CourseIntelligence } from "@/components/learning/CourseIntelligence";
 import { CourseSetupWizard } from "@/components/learning/CourseSetupWizard";
+import { GradePredictor } from "@/components/learning/GradePredictor";
 import { HandwritingCanvas } from "@/components/learning/HandwritingCanvas";
 import { ExamCountdown } from "@/components/learning/ExamCountdown";
 import { FlashcardsPanel } from "@/components/learning/FlashcardsPanel";
@@ -38,6 +39,8 @@ import { SlideReader } from "@/components/learning/SlideReader";
 import { StudyBrainPanel } from "@/components/learning/StudyBrainPanel";
 import { StudyTimer } from "@/components/learning/StudyTimer";
 import { TimetableGrid } from "@/components/learning/TimetableGrid";
+import { TimetableImportButton } from "@/components/learning/TimetableImportButton";
+import { WeeklyStudyReport } from "@/components/learning/WeeklyStudyReport";
 import { YouTubePanel } from "@/components/learning/YouTubePanel";
 
 import {
@@ -422,6 +425,14 @@ export function StudyHub({
         />
       )}
 
+      {/* Weekly report + grade predictor — shown when user has courses */}
+      {!showSetup && courses.length > 0 && (
+        <div className="space-y-4">
+          <WeeklyStudyReport />
+          <GradePredictor />
+        </div>
+      )}
+
       {message && (
         <p className="rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">
           {message}
@@ -455,19 +466,22 @@ export function StudyHub({
             </div>
           </div>
           {courses.length === 0 ? (
-            <Card className="border-dashed border-border bg-card/50 p-10 text-center">
-              <GraduationCap className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                Use <strong>Course Setup</strong> above to add your courses and build your timetable.
-              </p>
-              <button
-                type="button"
-                onClick={() => setShowSetup(true)}
-                className="mt-3 text-sm font-semibold text-accent hover:underline"
-              >
-                Set up courses now →
-              </button>
-            </Card>
+            <div className="space-y-4">
+              <TimetableImportButton />
+              <Card className="border-dashed border-border bg-card/50 p-8 text-center">
+                <GraduationCap className="mx-auto mb-3 h-8 w-8 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground">
+                  Or use <strong>Course Setup</strong> above to add your courses manually.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setShowSetup(true)}
+                  className="mt-3 text-sm font-semibold text-accent hover:underline"
+                >
+                  Set up courses manually →
+                </button>
+              </Card>
+            </div>
           ) : (
             <TimetableGrid courses={courses} />
           )}

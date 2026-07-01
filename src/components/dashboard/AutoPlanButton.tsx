@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Sparkles } from "lucide-react";
+
+export function AutoPlanButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 

@@ -13,6 +13,7 @@ import {
 
 import { ExamModePanel }         from "@/components/dashboard/ExamModePanel";
 import { GettingStarted, getGettingStartedSteps } from "@/components/dashboard/GettingStarted";
+import { StreakNudge }           from "@/components/dashboard/StreakNudge";
 import { TodayAgenda }           from "@/components/dashboard/TodayAgenda";
 import { TodaysSchedule }        from "@/components/dashboard/TodaysSchedule";
 import { XPBadge }               from "@/components/dashboard/XPBadge";
@@ -163,6 +164,11 @@ export default async function DashboardPage() {
           <GettingStarted steps={gettingStartedSteps} />
         </div>
       )}
+
+      {/* ── Streak / study nudge ─────────────────────────────────── */}
+      <div className="mb-5">
+        <StreakNudge />
+      </div>
 
       {/* ── Quick-access shortcuts (role-aware) ─────────────────── */}
       <div className={`mb-5 grid gap-2 grid-cols-4 ${quickLinks.length > 4 ? "sm:grid-cols-8" : "sm:grid-cols-4"}`}>
