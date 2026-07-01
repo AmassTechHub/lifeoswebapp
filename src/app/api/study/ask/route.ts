@@ -64,7 +64,15 @@ export async function POST(request: Request) {
   } catch (err) {
     const msg = err instanceof Error ? err.message : "AI request failed";
     console.error("[study/ask] Claude error:", msg);
-    return NextResponse.json({ reply: "AI is temporarily unavailable. Please try again.", citations: [], configured: true });
+    // Return the actual error message so users know what's wrong
+    const userMsg = msg.includes("401") || msg.includes("authentication")
+      ? "Invalid API key. Check your ANTHROPIC_API_KEY in Vercel environment variables."
+      : msg.includes("529") || msg.includes("overloaded")
+      ? "Claude is overloaded. Wait a moment and try again."
+      : msg.includes("rate_limit") || msg.includes("429")
+      ? "Rate limit reached. Try again in a few seconds."
+      : "AI request failed. Check your API key and try again.";
+    return NextResponse.json({ reply: userMsg, citations: [], configured: true });
   }
 
   let reply = raw;

@@ -37,18 +37,28 @@ export async function POST(request: Request) {
   const base64 = imageDataUrl.split(",")[1];
   const mediaType = imageDataUrl.split(";")[0].replace("data:", "") as "image/png" | "image/jpeg" | "image/webp";
 
-  const text = await callClaudeWithImage({
-    apiKey,
-    system: `You are a handwriting transcription assistant.
+  let text: string;
+  try {
+    text = await callClaudeWithImage({
+      apiKey,
+      system: `You are a handwriting transcription assistant.
 Transcribe the handwritten text in the image EXACTLY as written.
 Preserve line breaks, bullet points, and structure.
 If the image is blank or has no text, respond with an empty string.
 Do not add commentary — only the transcribed text.`,
-    base64Image: base64,
-    mediaType,
-    maxTokens: 1500,
-    isPro: userRecord?.isPro ?? false,
-  });
+      base64Image: base64,
+      mediaType,
+      maxTokens: 1500,
+      isPro: userRecord?.isPro ?? false,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown";
+    console.error("[transcribe-handwriting] Claude error:", msg);
+    const userMsg = msg.includes("401") ? "Invalid API key. Check ANTHROPIC_API_KEY."
+      : msg.includes("529") || msg.includes("overloaded") ? "Claude is overloaded. Try again in a moment."
+      : "Transcription failed. Try again.";
+    return NextResponse.json({ error: userMsg }, { status: 500 });
+  }
 
   // Optionally auto-save as a study note
   if (courseId && text.trim()) {

@@ -278,7 +278,15 @@ ${built.context}`;
     }
 
     return NextResponse.json({ mode, text: raw, courseName: built.course.name, sources: built.sources });
-  } catch {
-    return NextResponse.json({ error: "AI request failed. Try again." }, { status: 500 });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error("[ai-tutor] Claude error:", msg);
+    const userMsg = msg.includes("401") || msg.includes("authentication")
+      ? "Invalid API key. Check ANTHROPIC_API_KEY in Vercel."
+      : msg.includes("529") || msg.includes("overloaded")
+      ? "Claude is overloaded right now. Wait a moment and try again."
+      : msg.includes("429") ? "Rate limit hit. Try again in a few seconds."
+      : "AI request failed. Try again.";
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }
